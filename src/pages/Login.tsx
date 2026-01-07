@@ -1,8 +1,19 @@
 import { useState } from "react";
 
 import { supabase } from "../helper/supabaseClient";
-import { Link } from "react-router";
+import { Link as RouterLink } from "react-router";
 import { useNavigate } from "react-router";
+import {
+  Box,
+  Button,
+  Center,
+  Heading,
+  Input,
+  Stack,
+  Link as ChakraLink,
+  Field,
+  Alert,
+} from "@chakra-ui/react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -30,29 +41,49 @@ export default function Login() {
   };
 
   return (
-    <div>
-      <h2>Login</h2>
+    <Center h="100vh">
+      <Box p="10" shadow="lg">
+        <form onSubmit={handleSubmit}>
+          <Stack gap="10">
+            <Heading textAlign="center">Log In</Heading>
 
-      {message ? <span>{message}</span> : ""}
+            {message && (
+              <Alert.Root status="error">
+                <Alert.Title>{message}</Alert.Title>
+              </Alert.Root>
+            )}
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          required
-          onChange={(e) => setEmail(e.target.value)}
-          value={email}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          required
-          onChange={(e) => setPassword(e.target.value)}
-          value={password}
-        />
-        <button type="submit">Log in</button>
-      </form>
-      <Link to="/register">Don't have an account? Sign up</Link>
-    </div>
+            <Field.Root>
+              <Field.Label>Email</Field.Label>
+              <Input
+                type="email"
+                placeholder="Email"
+                required
+                onChange={(e) => setEmail(e.target.value)}
+                value={email}
+              />
+            </Field.Root>
+
+            <Field.Root>
+              <Field.Label>Password</Field.Label>
+              <Input
+                type="password"
+                placeholder="Password"
+                required
+                onChange={(e) => setPassword(e.target.value)}
+                value={password}
+              />
+            </Field.Root>
+            <Button type="submit">Log in</Button>
+
+            <ChakraLink asChild>
+              <RouterLink to="/register">
+                Don't have an account? Sign up
+              </RouterLink>
+            </ChakraLink>
+          </Stack>
+        </form>
+      </Box>
+    </Center>
   );
 }
