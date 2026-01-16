@@ -1,41 +1,40 @@
 import { useState } from "react";
 
-import { supabase } from "../helper/supabaseClient";
-import { Link as RouterLink, useNavigate } from "react-router";
+import { Link as RouterLink } from "react-router";
+import { useNavigate } from "react-router";
 import {
-  Alert,
   Box,
   Button,
   Center,
-  Field,
   Heading,
   Input,
   Stack,
   Link as ChakraLink,
+  Field,
+  Alert,
   Spinner,
 } from "@chakra-ui/react";
 import { PasswordInput } from "@/components/ui/password-input";
+import { supabase } from "@/helper/supabaseClient";
 
-export default function Register() {
+export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
-
-    if (password !== passwordConfirm) {
-      setMessage("Passwords don't match");
-      return;
-    }
-
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
 
     if (error) {
       setMessage(error.message);
@@ -43,19 +42,8 @@ export default function Register() {
     }
 
     if (data) {
-      const si = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (si.error) {
-        setMessage(si.error.message);
-      }
-      console.log(si.data);
-      navigate("/dashboard");
+      navigate("/");
     }
-
-    setLoading(false);
   };
 
   return (
@@ -63,12 +51,13 @@ export default function Register() {
       <Box p="10" shadow="lg" background="bg.subtle">
         <form onSubmit={handleSubmit}>
           <Stack gap="8">
-            <Heading textAlign="center">Register</Heading>
+            <Heading textAlign="center">Log In</Heading>
 
             <Field.Root>
               <Field.Label>Email</Field.Label>
               <Input
                 type="email"
+                placeholder="Email"
                 required
                 onChange={(e) => setEmail(e.target.value)}
                 value={email}
@@ -84,15 +73,6 @@ export default function Register() {
               />
             </Field.Root>
 
-            <Field.Root>
-              <Field.Label>Confirm Password</Field.Label>
-              <PasswordInput
-                required
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                value={passwordConfirm}
-              />
-            </Field.Root>
-
             {message && (
               <Alert.Root status="error">
                 <Alert.Title>{message}</Alert.Title>
@@ -100,12 +80,12 @@ export default function Register() {
             )}
 
             <Button disabled={loading} type="submit">
-              {loading ? <Spinner /> : "Sign Up"}
+              {loading ? <Spinner /> : "Log in"}
             </Button>
 
             <ChakraLink asChild>
-              <RouterLink to="/login">
-                Already have an account? Log in
+              <RouterLink to="/register">
+                Don't have an account? Sign up
               </RouterLink>
             </ChakraLink>
           </Stack>
