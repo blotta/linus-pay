@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 type Profile = {
   id: string;
+  email: string;
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
@@ -30,7 +31,7 @@ export function useProfile() {
         .single();
 
       if (error) setError(error.message);
-      else setProfile(data);
+      else setProfile({ ...data, email: auth.user.email! });
 
       setLoading(false);
     };

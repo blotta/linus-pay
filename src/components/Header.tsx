@@ -1,16 +1,19 @@
 import { supabase } from "@/helper/supabaseClient";
+import { GiHamburgerMenu } from "react-icons/gi";
 import { useProfile } from "@/hooks/useProfile";
 import {
   Avatar,
   Box,
+  Drawer,
   Flex,
   Heading,
-  HStack,
+  Icon,
   Menu,
   Portal,
   SkeletonCircle,
   Spacer,
   Text,
+  VStack,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { NavLink } from "react-router-dom";
@@ -28,6 +31,38 @@ export default function Header() {
   return (
     <Box borderBottomWidth="1px" px={4} py={2} background="gray.subtle">
       <Flex align="center">
+        <Drawer.Root placement="start" size="xs">
+          <Drawer.Trigger asChild>
+            <Icon mr="2" size="md">
+              <GiHamburgerMenu />
+            </Icon>
+          </Drawer.Trigger>
+          <Portal>
+            <Drawer.Backdrop />
+            <Drawer.Positioner>
+              <Drawer.Content>
+                <Drawer.Header>
+                  <Drawer.Title>MENU</Drawer.Title>
+                </Drawer.Header>
+                <Drawer.Body>
+                  <VStack align="start" spaceY="6">
+                    <NavLink to="/group-split">
+                      {({ isActive }) => (
+                        <Text
+                          fontSize="xl"
+                          color={isActive ? "yellow.focusRing" : "white"}
+                        >
+                          GROUP SPLIT
+                        </Text>
+                      )}
+                    </NavLink>
+                  </VStack>
+                </Drawer.Body>
+              </Drawer.Content>
+            </Drawer.Positioner>
+          </Portal>
+        </Drawer.Root>
+
         <NavLink to="/">
           <Heading size="xl">
             Linus
@@ -36,22 +71,16 @@ export default function Header() {
             </Text>
           </Heading>
         </NavLink>
+
         <Spacer />
-        <HStack>
-          <NavLink to="/group-split">
-            {({ isActive }) => (
-              <Text color={isActive ? "yellow" : "white"}>Group Split</Text>
-            )}
-          </NavLink>
-        </HStack>
-        <Spacer />
+
         <Menu.Root positioning={{ placement: "bottom" }}>
           <Menu.Trigger rounded="full" focusRing="outside">
             {loadingProfile ? (
               <SkeletonCircle size="10" />
             ) : (
-              <Avatar.Root>
-                <Avatar.Fallback name={profile?.full_name ?? "User"} />
+              <Avatar.Root title={profile?.full_name ?? profile?.email}>
+                <Avatar.Fallback name={profile?.full_name ?? profile?.email} />
                 <Avatar.Image src={profile?.avatar_url ?? undefined} />
               </Avatar.Root>
             )}
