@@ -1,10 +1,14 @@
 import { supabase } from "@/helper/supabaseClient";
+import { useProfile } from "@/hooks/useProfile";
 import {
+  Avatar,
   Box,
-  Button,
   Flex,
   Heading,
   HStack,
+  Menu,
+  Portal,
+  SkeletonCircle,
   Spacer,
   Text,
 } from "@chakra-ui/react";
@@ -13,6 +17,7 @@ import { NavLink } from "react-router-dom";
 
 export default function Header() {
   const navigate = useNavigate();
+  const { profile, loading: loadingProfile } = useProfile();
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -40,9 +45,31 @@ export default function Header() {
           </NavLink>
         </HStack>
         <Spacer />
-        <Button onClick={signOut} variant="surface" size="sm">
-          Logout
-        </Button>
+        <Menu.Root positioning={{ placement: "bottom" }}>
+          <Menu.Trigger rounded="full" focusRing="outside">
+            {loadingProfile ? (
+              <SkeletonCircle size="10" />
+            ) : (
+              <Avatar.Root>
+                <Avatar.Fallback name={profile?.full_name ?? "User"} />
+                <Avatar.Image src={profile?.avatar_url ?? undefined} />
+              </Avatar.Root>
+            )}
+          </Menu.Trigger>
+          <Portal>
+            <Menu.Positioner>
+              <Menu.Content>
+                <Menu.Item onClick={() => navigate("/profile")} value="profile">
+                  Profile
+                </Menu.Item>
+                <Menu.Separator />
+                <Menu.Item onClick={signOut} value="signout">
+                  Logout
+                </Menu.Item>
+              </Menu.Content>
+            </Menu.Positioner>
+          </Portal>
+        </Menu.Root>
       </Flex>
     </Box>
   );

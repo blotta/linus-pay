@@ -9,6 +9,7 @@ import Dashboard from "../features/dashboard/Dashboard";
 import GroupSplit from "../features/group-split/GroupSplit";
 import BaseLayout from "./BaseLayout";
 import NotFound from "./NotFound";
+import Profile from "@/features/auth/Profile";
 
 function App() {
   return (
@@ -29,6 +30,9 @@ function App() {
         >
           {/*dashboard*/}
           <Route path="/" element={<Dashboard />} />
+
+          {/*profile*/}
+          <Route path="/profile" element={<Profile />} />
 
           {/*group split*/}
           <Route path="/group-split" element={<GroupSplit groupId={null} />} />

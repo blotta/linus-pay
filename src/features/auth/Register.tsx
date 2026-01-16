@@ -20,6 +20,7 @@ export default function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -35,7 +36,16 @@ export default function Register() {
 
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          avatar_url: null,
+        },
+      },
+    });
 
     if (error) {
       setMessage(error.message);
@@ -64,6 +74,16 @@ export default function Register() {
         <form onSubmit={handleSubmit}>
           <Stack gap="8">
             <Heading textAlign="center">Register</Heading>
+
+            <Field.Root>
+              <Field.Label>Name</Field.Label>
+              <Input
+                type="text"
+                required
+                onChange={(e) => setName(e.target.value)}
+                value={name}
+              />
+            </Field.Root>
 
             <Field.Root>
               <Field.Label>Email</Field.Label>
