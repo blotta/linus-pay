@@ -10,38 +10,52 @@ import GroupSplit from "../features/group-split/GroupSplit";
 import BaseLayout from "./BaseLayout";
 import NotFound from "./NotFound";
 import Profile from "@/features/auth/Profile";
+import { AuthProvider } from "@/auth/AuthProvider";
+import GroupDetails from "@/features/group-split/GroupDetails";
+import { GroupSplitProvider } from "@/features/group-split/GroupSplitProvider";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/*register*/}
-        <Route path="/register" element={<Register />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/*register*/}
+          <Route path="/register" element={<Register />} />
 
-        {/*login*/}
-        <Route path="/login" element={<Login />} />
+          {/*login*/}
+          <Route path="/login" element={<Login />} />
 
-        <Route
-          element={
-            <AuthWrapper>
-              <BaseLayout />
-            </AuthWrapper>
-          }
-        >
-          {/*dashboard*/}
-          <Route path="/" element={<Dashboard />} />
+          <Route
+            element={
+              <AuthWrapper>
+                <BaseLayout />
+              </AuthWrapper>
+            }
+          >
+            {/*dashboard*/}
+            <Route path="/" element={<Dashboard />} />
 
-          {/*profile*/}
-          <Route path="/profile" element={<Profile />} />
+            {/*profile*/}
+            <Route path="/profile" element={<Profile />} />
 
-          {/*group split*/}
-          <Route path="/group-split" element={<GroupSplit groupId={null} />} />
-        </Route>
+            {/*group split*/}
+            <Route
+              path="/group-split"
+              element={
+                <GroupSplitProvider>
+                  <GroupSplit />
+                </GroupSplitProvider>
+              }
+            >
+              <Route path=":groupId" element={<GroupDetails />} />
+            </Route>
+          </Route>
 
-        {/*not found*/}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+          {/*not found*/}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

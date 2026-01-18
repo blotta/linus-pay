@@ -1,34 +1,22 @@
-import { useState } from "react";
-import type { Entry } from "./groupSplit.types";
-import DataTable from "@/components/DataTable";
-import { columns } from "./groupSplit.columns";
+import { Outlet } from "react-router";
+import GroupSelection from "./GroupSelection";
+import { Box, Spacer } from "@chakra-ui/react";
+import { useGroupSplit } from "./useGroupSplit";
 
-const defaultData: Entry[] = [
-  {
-    timestamp: new Date(),
-    description: "Condominio",
-    date: new Date("2025-12-08"),
-    amount: 236.18,
-    user: "Lucas",
-    installments: 1,
-    obs: null,
-  },
-];
+export default function GroupSplit() {
+  const { selectedGroup } = useGroupSplit();
+  return (
+    <>
+      <GroupSelection />
+      <Spacer h="10" />
+      {selectedGroup && (
+        <Box p="10" shadow="lg" background="bg.subtle" borderRadius="20px">
+          <Outlet />
+        </Box>
+      )}
+    </>
+  );
 
-interface GroupSplitProps {
-  groupId: string | null;
-}
-
-export default function GroupSplit({ groupId }: GroupSplitProps) {
-  const [data] = useState<Entry[]>([...defaultData]);
-
-  if (groupId === null) {
-    // return (
-    //   <>
-    //     <p>No group Id</p>
-    //   </>
-    // );
-  }
-
-  return <DataTable<Entry> data={data} columns={columns} />;
+  // const [data] = useState<Entry[]>([...defaultData]);
+  // return <DataTable<Entry> data={data} columns={columns} />;
 }
