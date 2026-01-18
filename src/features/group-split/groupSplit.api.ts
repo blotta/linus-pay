@@ -67,6 +67,7 @@ export async function getGroup(
       `
       id,
       name,
+      created_at,
       members: gs_group_members (
         id,
         user_id,
@@ -83,4 +84,23 @@ export async function getGroup(
   }
 
   return { data, error: null };
+}
+
+export async function createGroup(
+  supabase: SupabaseClient,
+  name: string,
+): Promise<ApiResult<string>> {
+  const { data, error } = await supabase
+    .from("gs_groups")
+    .insert({ name })
+    .select("id")
+    .single()
+    .overrideTypes<string>();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  // need to wait for db trigger to run
+  return { data: data.id, error: null };
 }

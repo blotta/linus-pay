@@ -82,7 +82,11 @@ export default function GroupSelection() {
                 </Select.Positioner>
               </Portal>
             </Select.Root>
-            <FormDrawer formNode={<GroupForm group_id={selectedGroup.id} />}>
+            <FormDrawer
+              title="Edit Group"
+              submitLabel="Save"
+              formNode={<GroupForm group_id={selectedGroup.id} />}
+            >
               <IconButton variant="outline">
                 <Tooltip content="Edit Group">
                   <BiEdit />
@@ -90,7 +94,11 @@ export default function GroupSelection() {
               </IconButton>
             </FormDrawer>
           </Group>
-          <FormDrawer formNode={<GroupForm group_id={null} />}>
+          <FormDrawer
+            title="Create Group"
+            submitLabel="Create"
+            formNode={<GroupForm group_id={null} />}
+          >
             <IconButton variant="solid" marginLeft="6">
               <Tooltip content="Create Group">
                 <BiPlus />
@@ -144,7 +152,11 @@ export default function GroupSelection() {
             </Card.Root>
           </RouterLink>
         ))}
-        <FormDrawer formNode={<GroupForm group_id={null} />}>
+        <FormDrawer
+          title="Create Group"
+          submitLabel="Create"
+          formNode={<GroupForm group_id={null} />}
+        >
           <Card.Root bg="gray.subtle" size="lg" _hover={{ bg: "gray.muted" }}>
             <Card.Header>
               <Card.Title>Create New Group</Card.Title>

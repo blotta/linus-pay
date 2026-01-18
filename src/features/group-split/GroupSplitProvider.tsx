@@ -1,7 +1,12 @@
 import { useAuth } from "@/auth/useAuth";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getGroup, getUserGroups, type UserGroup } from "./groupSplit.api";
+import {
+  createGroup,
+  getGroup,
+  getUserGroups,
+  type UserGroup,
+} from "./groupSplit.api";
 import { supabase } from "@/helper/supabaseClient";
 import type { Group } from "./groupSplit.types";
 import { GroupSplitContext } from "./GroupSplitContext";
@@ -16,9 +21,12 @@ export function GroupSplitProvider({
   const navigate = useNavigate();
 
   const [groups, setGroups] = useState<UserGroup[]>([]);
+  const [refreshGroups, setRefreshGroups] = useState<number>(0);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [loadingGroups, setLoadingGroups] = useState<boolean>(true);
   const [loadingGroup, setLoadingGroup] = useState<boolean>(false);
+  const [loadingGroupCreateUpdateDelete, setLoadingGroupCreateUpdateDelete] =
+    useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // fetch groups
@@ -38,7 +46,7 @@ export function GroupSplitProvider({
       setGroups(data ?? []);
     };
     loadGroups();
-  }, [userId]);
+  }, [userId, refreshGroups]);
 
   // sync URL -> selected group
   useEffect(() => {
@@ -61,11 +69,35 @@ export function GroupSplitProvider({
     };
 
     loadGroup();
-  }, [groupId, groups, navigate]);
+  }, [groupId, navigate]);
+
+  const createGroupFn = async (name: string): Promise<string | null> => {
+    setLoadingGroupCreateUpdateDelete(true);
+    const { data, error } = await createGroup(supabase, name);
+
+    if (error) {
+      setError(error);
+      setLoadingGroupCreateUpdateDelete(false);
+      return null;
+    }
+
+    setLoadingGroupCreateUpdateDelete(false);
+    setRefreshGroups((s) => s + 1);
+
+    return data;
+  };
 
   return (
     <GroupSplitContext.Provider
-      value={{ groups, selectedGroup, loadingGroups, loadingGroup, error }}
+      value={{
+        groups,
+        selectedGroup,
+        loadingGroups,
+        loadingGroup,
+        loadingGroupCreateUpdateDelete,
+        error,
+        createGroup: createGroupFn,
+      }}
     >
       {children}
     </GroupSplitContext.Provider>

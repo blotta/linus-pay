@@ -7,7 +7,9 @@ export type GroupSplitContextType = {
   selectedGroup: Group | null;
   loadingGroups: boolean;
   loadingGroup: boolean;
+  loadingGroupCreateUpdateDelete: boolean;
   error: string | null;
+  createGroup: (name: string) => Promise<string | null>;
 };
 
 export const GroupSplitContext = createContext<GroupSplitContextType | null>(
