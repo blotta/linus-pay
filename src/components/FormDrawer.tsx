@@ -32,6 +32,7 @@ export default function FormDrawer({
 }: FormDrawerProps) {
   const childRef = useRef<FormHandle>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
 
   const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -45,8 +46,16 @@ export default function FormDrawer({
     setLoading(val);
   };
 
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+  };
+
   return (
-    <Drawer.Root size="lg">
+    <Drawer.Root
+      size="lg"
+      open={drawerOpen}
+      onOpenChange={(e) => setDrawerOpen(e.open)}
+    >
       <Drawer.Trigger asChild cursor="pointer">
         {children}
       </Drawer.Trigger>
@@ -59,7 +68,11 @@ export default function FormDrawer({
                 <Drawer.Title>{title}</Drawer.Title>
               </Drawer.Header>
               <Drawer.Body>
-                {cloneElement(formNode, { ref: childRef, onUpdateLoading })}
+                {cloneElement(formNode, {
+                  ref: childRef,
+                  onUpdateLoading,
+                  closeDrawer,
+                })}
               </Drawer.Body>
               <Drawer.Footer>
                 <Button disabled={loading} variant="solid" type="submit">

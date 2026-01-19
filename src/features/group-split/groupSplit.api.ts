@@ -104,3 +104,50 @@ export async function createGroup(
   // need to wait for db trigger to run
   return { data: data.id, error: null };
 }
+
+export async function updateGroup(
+  supabase: SupabaseClient,
+  id: string,
+  values: { name: string },
+): Promise<ApiResult<boolean>> {
+  const { error } = await supabase
+    .from("gs_groups")
+    .update(values)
+    .eq("id", id);
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: true, error: null };
+}
+
+export async function deleteGroup(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<ApiResult<Group>> {
+  const { data, error } = await supabase
+    .from("gs_groups")
+    .delete()
+    .eq("id", id)
+    .select(
+      `
+      id,
+      name,
+      created_at,
+      members: gs_group_members (
+        id,
+        user_id,
+        name
+      )
+      `,
+    )
+    .single()
+    .overrideTypes<Group>();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data, error: null };
+}

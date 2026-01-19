@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   createGroup,
+  deleteGroup,
   getGroup,
   getUserGroups,
+  updateGroup,
   type UserGroup,
 } from "./groupSplit.api";
 import { supabase } from "@/helper/supabaseClient";
@@ -87,6 +89,45 @@ export function GroupSplitProvider({
     return data;
   };
 
+  const updateGroupFn = async (
+    id: string,
+    values: { name: string },
+  ): Promise<boolean> => {
+    setLoadingGroupCreateUpdateDelete(true);
+    const { error } = await updateGroup(supabase, id, values);
+
+    if (error) {
+      setError(error);
+      setLoadingGroupCreateUpdateDelete(false);
+      return false;
+    }
+
+    setLoadingGroupCreateUpdateDelete(false);
+    setRefreshGroups((s) => s + 1);
+    setSelectedGroup((g) => {
+      return { ...g, ...values } as Group;
+    });
+
+    return true;
+  };
+
+  const deleteGroupFn = async (id: string): Promise<Group | null> => {
+    setLoadingGroupCreateUpdateDelete(true);
+    const { data, error } = await deleteGroup(supabase, id);
+
+    if (error) {
+      setError(error);
+      setLoadingGroupCreateUpdateDelete(false);
+      return null;
+    }
+
+    setLoadingGroupCreateUpdateDelete(false);
+    setRefreshGroups((s) => s + 1);
+    navigate("/group-split", { replace: true });
+
+    return data;
+  };
+
   return (
     <GroupSplitContext.Provider
       value={{
@@ -97,6 +138,8 @@ export function GroupSplitProvider({
         loadingGroupCreateUpdateDelete,
         error,
         createGroup: createGroupFn,
+        updateGroup: updateGroupFn,
+        deleteGroup: deleteGroupFn,
       }}
     >
       {children}

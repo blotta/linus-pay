@@ -10,6 +10,8 @@ export type GroupSplitContextType = {
   loadingGroupCreateUpdateDelete: boolean;
   error: string | null;
   createGroup: (name: string) => Promise<string | null>;
+  updateGroup: (id: string, values: { name: string }) => Promise<boolean>;
+  deleteGroup: (id: string) => Promise<Group | null>;
 };
 
 export const GroupSplitContext = createContext<GroupSplitContextType | null>(
