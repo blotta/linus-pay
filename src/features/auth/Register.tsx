@@ -41,7 +41,7 @@ export default function Register() {
       password,
       options: {
         data: {
-          full_name: name,
+          full_name: name.trim(),
           avatar_url: null,
         },
       },

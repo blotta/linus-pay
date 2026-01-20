@@ -24,9 +24,12 @@ import { formatDate } from "@/utils/date";
 import FormDrawer from "../../components/FormDrawer";
 import GroupForm from "./GroupForm";
 import { Tooltip } from "@/components/ui/tooltip";
+import { colorFromUuid } from "@/utils/colors";
+import { useAuth } from "@/auth/useAuth";
 
 export default function GroupSelection() {
   const navigate = useNavigate();
+  const { userId } = useAuth();
   const { groups, selectedGroup, loadingGroup, loadingGroups } =
     useGroupSplit();
 
@@ -82,17 +85,20 @@ export default function GroupSelection() {
                 </Select.Positioner>
               </Portal>
             </Select.Root>
-            <FormDrawer
-              title="Edit Group"
-              submitLabel="Save"
-              formNode={<GroupForm group_id={selectedGroup.id} />}
-            >
-              <IconButton variant="outline">
-                <Tooltip content="Edit Group">
-                  <BiEdit />
-                </Tooltip>
-              </IconButton>
-            </FormDrawer>
+
+            {selectedGroup.admin_id === userId && (
+              <FormDrawer
+                title="Edit Group"
+                submitLabel="Save"
+                formNode={<GroupForm group_id={selectedGroup.id} />}
+              >
+                <IconButton variant="outline">
+                  <Tooltip content="Edit Group">
+                    <BiEdit />
+                  </Tooltip>
+                </IconButton>
+              </FormDrawer>
+            )}
           </Group>
           <FormDrawer
             title="Create Group"
@@ -142,9 +148,16 @@ export default function GroupSelection() {
                   </Text>
                   <AvatarGroup>
                     {g.members.map((m) => (
-                      <Avatar.Root key={m.id}>
-                        <Avatar.Fallback name={m.name} />
-                      </Avatar.Root>
+                      <Tooltip key={m.id} content={m.name}>
+                        <div>
+                          <Avatar.Root
+                            colorPalette={colorFromUuid(m.user_id!)}
+                            size="xs"
+                          >
+                            <Avatar.Fallback name={m.name} />
+                          </Avatar.Root>
+                        </div>
+                      </Tooltip>
                     ))}
                   </AvatarGroup>
                 </Flex>

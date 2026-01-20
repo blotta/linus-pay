@@ -7,6 +7,7 @@ import {
   getGroup,
   getUserGroups,
   updateGroup,
+  upsertGroupUserMembers,
   type UserGroup,
 } from "./groupSplit.api";
 import { supabase } from "@/helper/supabaseClient";
@@ -128,6 +129,28 @@ export function GroupSplitProvider({
     return data;
   };
 
+  const upsertUserMembersFn = async (
+    group_id: string | null,
+    members: { user_id: string; name: string }[],
+  ): Promise<void> => {
+    setLoadingGroupCreateUpdateDelete(true);
+    const { data, error } = await upsertGroupUserMembers(
+      supabase,
+      group_id ?? selectedGroup!.id,
+      members,
+    );
+
+    if (error) {
+      setError(error);
+      setLoadingGroupCreateUpdateDelete(false);
+      return;
+    }
+
+    setRefreshGroups((s) => s + 1);
+    setSelectedGroup((g) => ({ ...g!, members: data! }));
+    setLoadingGroupCreateUpdateDelete(false);
+  };
+
   return (
     <GroupSplitContext.Provider
       value={{
@@ -140,6 +163,7 @@ export function GroupSplitProvider({
         createGroup: createGroupFn,
         updateGroup: updateGroupFn,
         deleteGroup: deleteGroupFn,
+        upsertUserMembers: upsertUserMembersFn,
       }}
     >
       {children}

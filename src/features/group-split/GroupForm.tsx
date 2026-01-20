@@ -10,12 +10,15 @@ import {
   Stack,
   Text,
   useDialog,
+  VStack,
 } from "@chakra-ui/react";
 import { forwardRef, useImperativeHandle, useState, type Ref } from "react";
 import type { FormHandle } from "@/components/FormDrawer";
 import { useGroupSplit } from "./useGroupSplit";
 import { useNavigate } from "react-router";
 import { BiTrash } from "react-icons/bi";
+import ProfileSelectSearch from "@/components/ProfileSelectSearch";
+import type { Profile } from "@/api/profile.api";
 
 interface GroupFormProps {
   group_id: string | null;
@@ -30,10 +33,14 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
     deleteGroup,
     loadingGroupCreateUpdateDelete,
     selectedGroup,
+    upsertUserMembers,
   } = useGroupSplit();
   const [name, setName] = useState<string>(
     props.group_id ? selectedGroup!.name : "",
   );
+  const [userMembers, setUserMembers] = useState<
+    { user_id: string; name: string }[]
+  >([]);
   const navigate = useNavigate();
   const [deleteGroupNameConfirm, setDeleteGroupNameConfirm] =
     useState<string>("");
@@ -45,6 +52,9 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
       // new group
       props.onUpdateLoading?.(true);
       const id = await createGroup(name.trim());
+      if (userMembers.length > 0) {
+        await upsertUserMembers(id, userMembers);
+      }
       props.onUpdateLoading?.(false);
       if (id) {
         navigate(`/group-split/${id}`);
@@ -53,6 +63,9 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
       // update group
       props.onUpdateLoading?.(true);
       await updateGroup(props.group_id, { name: name.trim() });
+      if (userMembers.length > 0) {
+        await upsertUserMembers(null, userMembers);
+      }
       props.onUpdateLoading?.(false);
     }
   };
@@ -74,6 +87,9 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
 
   if (props.group_id != null) {
     // edit group
+    const memberUserIds = selectedGroup!.members
+      .filter((m) => m.user_id != null)
+      .map((m) => m.user_id!);
     return (
       <>
         <Dialog.Root>
@@ -124,15 +140,27 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
             </Dialog.Positioner>
           </Portal>
         </Dialog.Root>
-        <Field.Root disabled={loadingGroupCreateUpdateDelete}>
-          <Field.Label>Name</Field.Label>
-          <Input
-            type="text"
-            required
-            onChange={(e) => setName(e.target.value)}
-            value={name}
+        <VStack align="start" gap="8">
+          <Field.Root disabled={loadingGroupCreateUpdateDelete}>
+            <Field.Label>Name</Field.Label>
+            <Input
+              type="text"
+              required
+              onChange={(e) => setName(e.target.value)}
+              value={name}
+            />
+          </Field.Root>
+          <ProfileSelectSearch
+            initialIds={memberUserIds}
+            onValueChange={(p: Profile[]) => {
+              const members = p.map((p) => ({
+                user_id: p.id,
+                name: p.full_name,
+              }));
+              setUserMembers(members);
+            }}
           />
-        </Field.Root>
+        </VStack>
       </>
     );
   }
@@ -148,6 +176,16 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
           value={name}
         />
       </Field.Root>
+      <ProfileSelectSearch
+        initialIds={[]}
+        onValueChange={(p: Profile[]) => {
+          const members = p.map((p) => ({
+            user_id: p.id,
+            name: p.full_name,
+          }));
+          setUserMembers(members);
+        }}
+      />
     </>
   );
 });

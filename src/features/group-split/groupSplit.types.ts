@@ -2,13 +2,16 @@ export type Group = {
   id: string;
   name: string;
   created_at: Date;
-  members: GroupMemeber[];
+  admin_id: string;
+  members: GroupMember[];
 };
 
-export type GroupMemeber = {
+export type GroupMember = {
   id: string;
   user_id: string | null;
   name: string;
+  group_id: string;
+  created_at: Date;
 };
 
 export type Entry = {

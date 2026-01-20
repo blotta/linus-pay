@@ -17,6 +17,8 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { NavLink } from "react-router-dom";
+import { Tooltip } from "./ui/tooltip";
+import { colorFromUuid } from "@/utils/colors";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -79,10 +81,17 @@ export default function Header() {
             {loadingProfile ? (
               <SkeletonCircle size="10" />
             ) : (
-              <Avatar.Root title={profile?.full_name ?? profile?.email}>
-                <Avatar.Fallback name={profile?.full_name ?? profile?.email} />
-                <Avatar.Image src={profile?.avatar_url ?? undefined} />
-              </Avatar.Root>
+              <Tooltip content={profile?.full_name}>
+                <div>
+                  <Avatar.Root
+                    colorPalette={colorFromUuid(profile!.id)}
+                    title={profile?.full_name}
+                  >
+                    <Avatar.Fallback name={profile?.full_name} />
+                    <Avatar.Image src={profile?.avatar_url ?? undefined} />
+                  </Avatar.Root>
+                </div>
+              </Tooltip>
             )}
           </Menu.Trigger>
           <Portal>

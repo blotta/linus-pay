@@ -12,6 +12,10 @@ export type GroupSplitContextType = {
   createGroup: (name: string) => Promise<string | null>;
   updateGroup: (id: string, values: { name: string }) => Promise<boolean>;
   deleteGroup: (id: string) => Promise<Group | null>;
+  upsertUserMembers: (
+    group_id: string | null,
+    members: { user_id: string; name: string }[],
+  ) => Promise<void>;
 };
 
 export const GroupSplitContext = createContext<GroupSplitContextType | null>(

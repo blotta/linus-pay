@@ -1,9 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Group } from "./groupSplit.types";
-
-export type ApiResult<T> =
-  | { data: T; error: null }
-  | { data: null; error: string };
+import type { Group, GroupMember } from "./groupSplit.types";
+import type { ApiResult } from "@/api/api.types";
 
 export type UserGroup = {
   id: string;
@@ -47,15 +44,47 @@ export async function getUserGroups(
   return { data: groups, error: null };
 }
 
-type _GetGroupQueryRet = {
+type _DbGroup = {
   id: string;
   name: string;
-  members: {
-    id: string;
-    user_id: string | null;
-    name: string;
-  }[];
+  created_at: Date;
+  admin_id: string;
+  members: _DbGroupMember[];
 };
+
+type _DbGroupMember = {
+  id: string;
+  user_id: string | null;
+  name: string;
+  group_id: string;
+  created_at: string;
+};
+
+function queryToObjGroup(data: _DbGroup): Group {
+  const members: GroupMember[] = data.members
+    .map((m) => queryToObjGroupMember(m))
+    .sort((a) => (a.id === data.admin_id ? -1 : 1));
+
+  const group: Group = {
+    id: data.id,
+    name: data.name,
+    created_at: new Date(data.created_at),
+    admin_id: data.admin_id,
+    members: members,
+  };
+  return group;
+}
+
+function queryToObjGroupMember(data: _DbGroupMember): GroupMember {
+  const member: GroupMember = {
+    id: data.id,
+    user_id: data.user_id,
+    name: data.name,
+    group_id: data.group_id,
+    created_at: new Date(data.created_at),
+  };
+  return member;
+}
 
 export async function getGroup(
   supabase: SupabaseClient,
@@ -68,22 +97,27 @@ export async function getGroup(
       id,
       name,
       created_at,
+      admin_id,
       members: gs_group_members (
         id,
         user_id,
-        name
+        name,
+        group_id,
+        created_at
       )
       `,
     )
     .eq("id", groupId)
     .single()
-    .overrideTypes<_GetGroupQueryRet>();
+    .overrideTypes<_DbGroup>();
 
   if (error) {
     return { data: null, error: error.message };
   }
 
-  return { data, error: null };
+  const group: Group = queryToObjGroup(data);
+
+  return { data: group, error: null };
 }
 
 export async function createGroup(
@@ -135,19 +169,69 @@ export async function deleteGroup(
       id,
       name,
       created_at,
+      admin_id,
       members: gs_group_members (
         id,
         user_id,
-        name
+        name,
+        group_id,
+        created_at
       )
       `,
     )
     .single()
-    .overrideTypes<Group>();
+    .overrideTypes<_DbGroup>();
 
   if (error) {
     return { data: null, error: error.message };
   }
 
-  return { data, error: null };
+  return { data: queryToObjGroup(data), error: null };
+}
+
+export async function upsertGroupUserMembers(
+  supabase: SupabaseClient,
+  group_id: string,
+  members: { user_id: string; name: string }[],
+): Promise<ApiResult<GroupMember[]>> {
+  const memberIds = members.map((m) => m.user_id!);
+
+  const { data: group } = await getGroup(supabase, group_id);
+  const prevMembers = group!.members;
+  const prevMemberIds = prevMembers.map((m) => m.user_id);
+
+  const removeIds = prevMemberIds.filter((m) => !memberIds.includes(m!));
+  const addIds = memberIds.filter((m) => !prevMemberIds.includes(m));
+
+  if (removeIds.length > 0) {
+    const { error } = await supabase
+      .from("gs_group_members")
+      .delete()
+      .eq("group_id", group_id)
+      .in("user_id", removeIds);
+    if (error) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  if (addIds.length > 0) {
+    const addMembers = members
+      .filter((m) => addIds.includes(m.user_id!))
+      .map((m) => ({
+        user_id: m.user_id,
+        group_id: group_id,
+        name: m.name,
+      }));
+    const { error } = await supabase
+      .from("gs_group_members")
+      .insert(addMembers);
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+  }
+
+  const { data: updatedGroup } = await getGroup(supabase, group_id);
+
+  return { data: updatedGroup!.members, error: null };
 }
