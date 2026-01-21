@@ -189,42 +189,60 @@ export async function deleteGroup(
   return { data: queryToObjGroup(data), error: null };
 }
 
+type Mem = {
+  user_id: string | null;
+  name: string;
+};
 export async function upsertGroupUserMembers(
   supabase: SupabaseClient,
   group_id: string,
-  members: { user_id: string; name: string }[],
+  members: Mem[],
 ): Promise<ApiResult<GroupMember[]>> {
-  const memberIds = members.map((m) => m.user_id!);
+  const userMems: Mem[] = members.filter((m) => m.user_id != null);
+  const virtMems: Mem[] = members.filter((m) => m.user_id == null);
 
   const { data: group } = await getGroup(supabase, group_id);
-  const prevMembers = group!.members;
-  const prevMemberIds = prevMembers.map((m) => m.user_id);
+  const prevUserMembers: GroupMember[] = group!.members.filter(
+    (m) => m.user_id != null,
+  );
+  const prevVirtMembers: GroupMember[] = group!.members.filter(
+    (m) => m.user_id == null,
+  );
 
-  const removeIds = prevMemberIds.filter((m) => !memberIds.includes(m!));
-  const addIds = memberIds.filter((m) => !prevMemberIds.includes(m));
+  const removeUserMemberIds: string[] = prevUserMembers
+    .filter((mb) => userMems.find((m) => m.user_id == mb.user_id) == null)
+    .map((m) => m.id);
+  const removeVirtMemberIds: string[] = prevVirtMembers
+    .filter((mb) => virtMems.find((m) => m.name == mb.name) == null)
+    .map((m) => m.id);
+  const removeMemberIds = [...removeUserMemberIds, ...removeVirtMemberIds];
 
-  if (removeIds.length > 0) {
+  if (removeMemberIds.length > 0) {
     const { error } = await supabase
       .from("gs_group_members")
       .delete()
       .eq("group_id", group_id)
-      .in("user_id", removeIds);
+      .in("id", removeMemberIds);
     if (error) {
       return { data: null, error: error.message };
     }
   }
 
-  if (addIds.length > 0) {
-    const addMembers = members
-      .filter((m) => addIds.includes(m.user_id!))
-      .map((m) => ({
-        user_id: m.user_id,
-        group_id: group_id,
-        name: m.name,
-      }));
-    const { error } = await supabase
-      .from("gs_group_members")
-      .insert(addMembers);
+  const addUserMems: Mem[] = userMems.filter(
+    (m) => prevUserMembers.find((mb) => mb.user_id == m.user_id) == null,
+  );
+  const addVirtMems: Mem[] = virtMems.filter(
+    (m) => prevVirtMembers.find((mb) => mb.name == m.name) == null,
+  );
+  const addMems: Mem[] = [...addUserMems, ...addVirtMems];
+
+  if (addMems.length > 0) {
+    const toAdd = addMems.map((m) => ({
+      user_id: m.user_id,
+      group_id: group_id,
+      name: m.name,
+    }));
+    const { error } = await supabase.from("gs_group_members").insert(toAdd);
 
     if (error) {
       return { data: null, error: error.message };

@@ -17,6 +17,8 @@ export type GroupMember = {
 export type Entry = {
   id: string;
   created_at: Date;
+  group_id: string;
+  member_id: string;
   description: string;
   date: Date;
   amount: number;

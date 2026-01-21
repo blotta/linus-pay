@@ -8,6 +8,7 @@ import {
   upsertGroupUserMembers,
 } from "../../src/features/group-split/groupSplit.api";
 import { exit } from "node:process";
+import { GroupMember } from "../../src/features/group-split/groupSplit.types";
 
 const email = process.env.TEST_USER_EMAIL!;
 const password = process.env.TEST_USER_PASSWORD!;
@@ -95,18 +96,26 @@ async function runGroup() {
   STEP = "upsert group user members";
   {
     const { data } = await getGroup(supabase, groupId);
-    log(data, STEP, { json: true });
+    const members: GroupMember[] = data.members;
+    log(
+      members.map((m) => m.name),
+      `${FEATURE}:${STEP}:before first change`,
+    );
   }
   const profiles = await supabase
     .from("profiles")
     .select("id, full_name")
     .neq("id", authData.user?.id)
     .overrideTypes<{ id: string; full_name: string }[]>();
-  const potentialMembers = profiles.data!.map((p) => ({
+  const potentialUserMembers = profiles.data!.map((p) => ({
     user_id: p.id,
     name: p.full_name,
   }));
-  const members = [...group.members, potentialMembers[0]];
+  let members = [
+    group.members[0], // admin
+    potentialUserMembers[0],
+    { user_id: null, name: "Virtual User 1" },
+  ];
   const {
     data: upsertGroupUserMembersData,
     error: upsertGroupUserMembersError,
@@ -114,7 +123,30 @@ async function runGroup() {
   check(upsertGroupUserMembersData, upsertGroupUserMembersError);
   {
     const { data } = await getGroup(supabase, groupId);
-    log(data, STEP, { json: true });
+    members = data.members;
+    log(
+      members.map((m) => m.name),
+      `${FEATURE}:${STEP}:after first change`,
+    );
+  }
+  members = [
+    group.members[0], // admin
+    // potentialUserMembers[0], // keep
+    potentialUserMembers[1], // new
+    { user_id: null, name: "Virtual User 2" }, // new
+  ];
+  const {
+    data: upsertGroupUserMembersData2,
+    error: upsertGroupUserMembersError2,
+  } = await upsertGroupUserMembers(supabase, groupId, members);
+  check(upsertGroupUserMembersData2, upsertGroupUserMembersError2);
+  {
+    const { data } = await getGroup(supabase, groupId);
+    members = data.members;
+    log(
+      members.map((m) => m.name),
+      `${FEATURE}:${STEP}:after second change`,
+    );
   }
 
   // delete
