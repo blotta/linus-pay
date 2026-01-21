@@ -79,7 +79,7 @@ export default function ProfileSelectSearch({
         }
       }
       setSelectedProfiles(profs);
-      onValueChange(selectedProfiles);
+      onValueChange(profs);
     };
     fetchProfiles();
     /* eslint-disable react-hooks/exhaustive-deps */

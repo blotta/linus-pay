@@ -42,7 +42,9 @@ export default function GroupDetails() {
   }
   return (
     <HStack justifyContent="space-between" alignItems="start">
-      <Heading> Group: {selectedGroup?.name}</Heading>
+      <Heading truncate title={selectedGroup?.name}>
+        Group: {selectedGroup?.name}
+      </Heading>
       <VStack alignItems="end" gap="4">
         {selectedGroup?.members
           .filter((m) => m.user_id == selectedGroup.admin_id)

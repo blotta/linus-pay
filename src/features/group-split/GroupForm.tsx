@@ -98,14 +98,17 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
     }
   };
   const handleAddVirtualMember = () => {
-    if (virtMembers.find((v) => v.name == virtMemberInput) == null) {
+    if (
+      virtMemberInput.length > 3 &&
+      virtMembers.find((v) => v.name == virtMemberInput) == null
+    ) {
       setVirtMembers((v) => [...v, { user_id: null, name: virtMemberInput }]);
       setVirtMemberInput("");
     }
   };
 
   const handleRemoveVirtualMember = (name: string) => {
-    setVirtMembers(virtMembers.filter((v) => v.name != name));
+    setVirtMembers((v) => v.filter((m) => m.name != name));
   };
 
   useImperativeHandle(ref, () => ({
