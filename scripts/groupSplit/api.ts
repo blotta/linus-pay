@@ -1,7 +1,9 @@
 import { supabase } from "../supabaseNodeClient";
 import {
+  addEntry,
   createGroup,
   deleteGroup,
+  getEntries,
   getGroup,
   getUserGroups,
   updateGroup,
@@ -158,5 +160,37 @@ async function runGroup() {
   check(deletedGroup, deletedError, { json: true });
 }
 
+async function runEntries() {
+  FEATURE = "Group Entries";
+  // create
+  const { data: groupId } = await createGroup(supabase, "NEW GRP ENTRIES");
+  const { data: group } = await getGroup(supabase, groupId);
+  const members: GroupMember[] = group.members;
+
+  STEP = "ADD ENTRY";
+  const { data: entryId, error: errorAddEntry } = await addEntry(supabase, {
+    description: "something",
+    amount: 321.2,
+    date: new Date(),
+    group_id: groupId,
+    member_id: members.find((m) => m.user_id == authData.user!.id)!.id,
+    installment: 1,
+    installments: 1,
+    obs: null,
+    payment_type: "credit-card",
+  });
+  check(entryId, errorAddEntry);
+
+  STEP = "GET GROUP ENTRIES";
+  const { data: entries, error: errorGetEntries } = await getEntries(
+    supabase,
+    groupId,
+  );
+  check(entries, errorGetEntries, { json: true });
+
+  await deleteGroup(supabase, groupId);
+}
+
 await runGroup();
 await runUserGroups();
+await runEntries();

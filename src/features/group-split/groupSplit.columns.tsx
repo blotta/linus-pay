@@ -3,20 +3,20 @@ import type { Entry } from "./groupSplit.types";
 import { FormatNumber, LocaleProvider } from "@chakra-ui/react";
 
 export const columns: ColumnDef<Entry>[] = [
+  // {
+  //   accessorKey: "created_at",
+  //   header: "CreatedAt",
+  //   cell: (info) => (info.getValue() as Date).toDateString(),
+  // },
   {
-    accessorKey: "timestamp",
-    header: "CreatedAt",
+    accessorKey: "date",
+    header: "Date",
     cell: (info) => (info.getValue() as Date).toDateString(),
   },
   {
     accessorKey: "description",
     header: "Description",
     cell: (info) => info.getValue(),
-  },
-  {
-    accessorKey: "date",
-    header: "Date",
-    cell: (info) => (info.getValue() as Date).toDateString(),
   },
   {
     accessorKey: "amount",
@@ -32,8 +32,13 @@ export const columns: ColumnDef<Entry>[] = [
     ),
   },
   {
+    accessorKey: "payment_type",
+    header: "Payment Type",
+    cell: (info) => info.getValue(),
+  },
+  {
     accessorKey: "user",
-    header: "User",
+    header: "Member",
     cell: (info) => info.getValue(),
   },
   {

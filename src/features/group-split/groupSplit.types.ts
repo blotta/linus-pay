@@ -22,9 +22,8 @@ export type Entry = {
   description: string;
   date: Date;
   amount: number;
-  user: string;
-  installments: number;
   installment: number;
+  installments: number;
   obs: string | null;
   payment_type: "credit-card" | "debit-card" | "pix" | "boleto" | "cash";
 };

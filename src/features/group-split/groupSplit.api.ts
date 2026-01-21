@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Group, GroupMember } from "./groupSplit.types";
+import type { Entry, Group, GroupMember } from "./groupSplit.types";
 import type { ApiResult } from "@/api/api.types";
 
 export type UserGroup = {
@@ -50,6 +50,7 @@ type _DbGroup = {
   created_at: Date;
   admin_id: string;
   members: _DbGroupMember[];
+  entries: _DbEntry[];
 };
 
 type _DbGroupMember = {
@@ -60,9 +61,23 @@ type _DbGroupMember = {
   created_at: string;
 };
 
-function queryToObjGroup(data: _DbGroup): Group {
+type _DbEntry = {
+  id: string;
+  created_at: string;
+  group_id: string;
+  member_id: string;
+  description: string;
+  date: string;
+  amount: number;
+  installment: number;
+  installments: number;
+  obs: string | null;
+  payment_type: "credit-card" | "debit-card" | "pix" | "boleto" | "cash";
+};
+
+function dbToObjGroup(data: _DbGroup): Group {
   const members: GroupMember[] = data.members
-    .map((m) => queryToObjGroupMember(m))
+    .map((m) => dbToObjGroupMember(m))
     .sort((a) => (a.id === data.admin_id ? -1 : 1));
 
   const group: Group = {
@@ -75,7 +90,7 @@ function queryToObjGroup(data: _DbGroup): Group {
   return group;
 }
 
-function queryToObjGroupMember(data: _DbGroupMember): GroupMember {
+function dbToObjGroupMember(data: _DbGroupMember): GroupMember {
   const member: GroupMember = {
     id: data.id,
     user_id: data.user_id,
@@ -84,6 +99,23 @@ function queryToObjGroupMember(data: _DbGroupMember): GroupMember {
     created_at: new Date(data.created_at),
   };
   return member;
+}
+
+function dbToObjEntry(data: _DbEntry): Entry {
+  const entry: Entry = {
+    id: data.id,
+    created_at: new Date(data.created_at),
+    group_id: data.group_id,
+    member_id: data.member_id,
+    description: data.description,
+    date: new Date(data.date),
+    amount: data.amount,
+    installment: data.installment,
+    installments: data.installments,
+    obs: data.obs,
+    payment_type: data.payment_type,
+  };
+  return entry;
 }
 
 export async function getGroup(
@@ -115,7 +147,7 @@ export async function getGroup(
     return { data: null, error: error.message };
   }
 
-  const group: Group = queryToObjGroup(data);
+  const group: Group = dbToObjGroup(data);
 
   return { data: group, error: null };
 }
@@ -186,7 +218,7 @@ export async function deleteGroup(
     return { data: null, error: error.message };
   }
 
-  return { data: queryToObjGroup(data), error: null };
+  return { data: dbToObjGroup(data), error: null };
 }
 
 type Mem = {
@@ -252,4 +284,55 @@ export async function upsertGroupUserMembers(
   const { data: updatedGroup } = await getGroup(supabase, group_id);
 
   return { data: updatedGroup!.members, error: null };
+}
+
+export async function getEntries(
+  supabase: SupabaseClient,
+  group_id: string,
+): Promise<ApiResult<Entry[]>> {
+  const { data, error } = await supabase
+    .from("gs_entries")
+    .select(
+      `
+      id,
+      created_at,
+      group_id,
+      member_id,
+      description,
+      date,
+      amount,
+      installment,
+      installments,
+      obs,
+      payment_type
+      `,
+    )
+    .eq("group_id", group_id)
+    .overrideTypes<_DbEntry[]>();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: data.map((e) => dbToObjEntry(e)), error: null };
+}
+
+type EntryWithoutId = Omit<Entry, "id" | "created_at">;
+
+export async function addEntry(
+  supabase: SupabaseClient,
+  entry: EntryWithoutId,
+): Promise<ApiResult<string>> {
+  const { data, error } = await supabase
+    .from("gs_entries")
+    .insert(entry)
+    .select("id")
+    .single()
+    .overrideTypes<string>();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: data.id, error: null };
 }
