@@ -1,9 +1,13 @@
 import {
+  Avatar,
+  Box,
   Button,
   Code,
   Dialog,
   Field,
   Flex,
+  Group,
+  HStack,
   IconButton,
   Input,
   Portal,
@@ -12,13 +16,20 @@ import {
   useDialog,
   VStack,
 } from "@chakra-ui/react";
-import { forwardRef, useImperativeHandle, useState, type Ref } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useState,
+  type Ref,
+} from "react";
 import type { FormHandle } from "@/components/FormDrawer";
 import { useGroupSplit } from "./useGroupSplit";
 import { useNavigate } from "react-router";
 import { BiTrash } from "react-icons/bi";
 import ProfileSelectSearch from "@/components/ProfileSelectSearch";
 import type { Profile } from "@/api/profile.api";
+import { CgClose } from "react-icons/cg";
 
 interface GroupFormProps {
   group_id: string | null;
@@ -41,6 +52,10 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
   const [userMembers, setUserMembers] = useState<
     { user_id: string; name: string }[]
   >([]);
+  const [virtMemberInput, setVirtMemberInput] = useState<string>("");
+  const [virtMembers, setVirtMembers] = useState<
+    { user_id: null; name: string }[]
+  >([]);
   const navigate = useNavigate();
   const [deleteGroupNameConfirm, setDeleteGroupNameConfirm] =
     useState<string>("");
@@ -52,8 +67,9 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
       // new group
       props.onUpdateLoading?.(true);
       const id = await createGroup(name.trim());
-      if (userMembers.length > 0) {
-        await upsertUserMembers(id, userMembers);
+      const members = [...userMembers, ...virtMembers];
+      if (members.length > 0) {
+        await upsertUserMembers(id, members);
       }
       props.onUpdateLoading?.(false);
       if (id) {
@@ -63,8 +79,9 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
       // update group
       props.onUpdateLoading?.(true);
       await updateGroup(props.group_id, { name: name.trim() });
-      if (userMembers.length > 0) {
-        await upsertUserMembers(null, userMembers);
+      const members = [...userMembers, ...virtMembers];
+      if (members.length > 0) {
+        await upsertUserMembers(null, members);
       }
       props.onUpdateLoading?.(false);
     }
@@ -80,10 +97,34 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
       console.log("no match", deleteGroupNameConfirm, selectedGroup?.name);
     }
   };
+  const handleAddVirtualMember = () => {
+    if (virtMembers.find((v) => v.name == virtMemberInput) == null) {
+      setVirtMembers((v) => [...v, { user_id: null, name: virtMemberInput }]);
+      setVirtMemberInput("");
+    }
+  };
+
+  const handleRemoveVirtualMember = (name: string) => {
+    setVirtMembers(virtMembers.filter((v) => v.name != name));
+  };
 
   useImperativeHandle(ref, () => ({
     triggerSubmit: handleSubmit,
   }));
+
+  useEffect(() => {
+    const initializeVirtMembers = async () => {
+      if (props.group_id != null) {
+        const vm: { user_id: null; name: string }[] =
+          selectedGroup!.members
+            .filter((m) => m.user_id == null)
+            .map((m) => ({ user_id: null, name: m.name })) ?? [];
+        setVirtMembers(vm);
+      }
+    };
+    initializeVirtMembers();
+    /* eslint-disable react-hooks/exhaustive-deps */
+  }, [selectedGroup]);
 
   if (props.group_id != null) {
     // edit group
@@ -160,6 +201,60 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
               setUserMembers(members);
             }}
           />
+          <VStack align="start" gap="2" width="100%">
+            <Field.Root
+              disabled={loadingGroupCreateUpdateDelete}
+              invalid={!!virtMembers.find((v) => v.name == virtMemberInput)}
+            >
+              <Field.Label>Virtual Members</Field.Label>
+              <Group attached w="full">
+                <Input
+                  type="text"
+                  minLength={3}
+                  onChange={(e) => setVirtMemberInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddVirtualMember();
+                    }
+                  }}
+                  value={virtMemberInput}
+                />
+                <Button
+                  onClick={() => handleAddVirtualMember()}
+                  variant="outline"
+                >
+                  Add
+                </Button>
+              </Group>
+            </Field.Root>
+            {virtMembers.map((v) => (
+              <Box
+                key={v.name}
+                bg="gray.subtle"
+                p="2"
+                width="100%"
+                border="1px solid"
+                borderColor="gray.border"
+                borderRadius="4px"
+              >
+                <HStack gap="4">
+                  <Avatar.Root>
+                    <Avatar.Fallback name={v.name} />
+                  </Avatar.Root>
+                  <Text marginEnd="auto">{v.name}</Text>
+                  <IconButton
+                    variant="ghost"
+                    color="red.muted"
+                    onClick={() => handleRemoveVirtualMember(v.name)}
+                    _hover={{ color: "red.solid" }}
+                  >
+                    <CgClose />
+                  </IconButton>
+                </HStack>
+              </Box>
+            ))}
+          </VStack>
         </VStack>
       </>
     );
@@ -167,25 +262,81 @@ const GroupForm = forwardRef((props: GroupFormProps, ref: Ref<FormHandle>) => {
 
   return (
     <>
-      <Field.Root disabled={loadingGroupCreateUpdateDelete}>
-        <Field.Label>Name</Field.Label>
-        <Input
-          type="text"
-          required
-          onChange={(e) => setName(e.target.value)}
-          value={name}
+      <VStack align="start" gap="8">
+        <Field.Root disabled={loadingGroupCreateUpdateDelete}>
+          <Field.Label>Name</Field.Label>
+          <Input
+            type="text"
+            required
+            onChange={(e) => setName(e.target.value)}
+            value={name}
+          />
+        </Field.Root>
+        <ProfileSelectSearch
+          initialIds={[]}
+          onValueChange={(p: Profile[]) => {
+            const members = p.map((p) => ({
+              user_id: p.id,
+              name: p.full_name,
+            }));
+            setUserMembers(members);
+          }}
         />
-      </Field.Root>
-      <ProfileSelectSearch
-        initialIds={[]}
-        onValueChange={(p: Profile[]) => {
-          const members = p.map((p) => ({
-            user_id: p.id,
-            name: p.full_name,
-          }));
-          setUserMembers(members);
-        }}
-      />
+        <VStack align="start" gap="2" width="100%">
+          <Field.Root
+            disabled={loadingGroupCreateUpdateDelete}
+            invalid={!!virtMembers.find((v) => v.name == virtMemberInput)}
+          >
+            <Field.Label>Virtual Members</Field.Label>
+            <Group attached w="full">
+              <Input
+                type="text"
+                minLength={3}
+                onChange={(e) => setVirtMemberInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddVirtualMember();
+                  }
+                }}
+                value={virtMemberInput}
+              />
+              <Button
+                onClick={() => handleAddVirtualMember()}
+                variant="outline"
+              >
+                Add
+              </Button>
+            </Group>
+          </Field.Root>
+          {virtMembers.map((v) => (
+            <Box
+              key={v.name}
+              bg="gray.subtle"
+              p="2"
+              width="100%"
+              border="1px solid"
+              borderColor="gray.border"
+              borderRadius="4px"
+            >
+              <HStack gap="4">
+                <Avatar.Root>
+                  <Avatar.Fallback name={v.name} />
+                </Avatar.Root>
+                <Text marginEnd="auto">{v.name}</Text>
+                <IconButton
+                  variant="ghost"
+                  color="red.muted"
+                  onClick={() => handleRemoveVirtualMember(v.name)}
+                  _hover={{ color: "red.solid" }}
+                >
+                  <CgClose />
+                </IconButton>
+              </HStack>
+            </Box>
+          ))}
+        </VStack>
+      </VStack>
     </>
   );
 });

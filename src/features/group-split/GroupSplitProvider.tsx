@@ -131,7 +131,7 @@ export function GroupSplitProvider({
 
   const upsertUserMembersFn = async (
     group_id: string | null,
-    members: { user_id: string; name: string }[],
+    members: { user_id: string | null; name: string }[],
   ): Promise<void> => {
     setLoadingGroupCreateUpdateDelete(true);
     const { data, error } = await upsertGroupUserMembers(

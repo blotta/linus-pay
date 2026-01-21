@@ -53,7 +53,7 @@ export default function GroupDetails() {
                 <div>
                   <Avatar.Root
                     css={ringCss}
-                    colorPalette={colorFromUuid(m.user_id!)}
+                    colorPalette={colorFromUuid(m.id)}
                     size="sm"
                   >
                     <Avatar.Fallback name={m.name} />
@@ -72,7 +72,7 @@ export default function GroupDetails() {
                     <div>
                       <Avatar.Root
                         css={ringCss}
-                        colorPalette={colorFromUuid(m.user_id!)}
+                        colorPalette={colorFromUuid(m.id)}
                       >
                         <Avatar.Fallback name={m.name} />
                       </Avatar.Root>

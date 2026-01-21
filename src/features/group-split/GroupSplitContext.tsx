@@ -14,7 +14,7 @@ export type GroupSplitContextType = {
   deleteGroup: (id: string) => Promise<Group | null>;
   upsertUserMembers: (
     group_id: string | null,
-    members: { user_id: string; name: string }[],
+    members: { user_id: string | null; name: string }[],
   ) => Promise<void>;
 };
 

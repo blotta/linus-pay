@@ -151,7 +151,7 @@ export default function GroupSelection() {
                       <Tooltip key={m.id} content={m.name}>
                         <div>
                           <Avatar.Root
-                            colorPalette={colorFromUuid(m.user_id!)}
+                            colorPalette={colorFromUuid(m.id!)}
                             size="xs"
                           >
                             <Avatar.Fallback name={m.name} />
