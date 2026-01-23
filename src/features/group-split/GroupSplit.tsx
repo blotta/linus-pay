@@ -10,7 +10,12 @@ export default function GroupSplit() {
       <GroupSelection />
       <Spacer h="10" />
       {selectedGroup && (
-        <Box p="10" shadow="lg" background="bg.subtle" borderRadius="20px">
+        <Box
+          p={{ base: 10, smDown: 3 }}
+          shadow="lg"
+          background="bg.subtle"
+          borderRadius="20px"
+        >
           <Outlet />
         </Box>
       )}

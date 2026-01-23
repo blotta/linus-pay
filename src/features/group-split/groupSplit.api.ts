@@ -61,6 +61,31 @@ type _DbGroupMember = {
   created_at: string;
 };
 
+export const PAYMENT_TYPES = [
+  "credit-card",
+  "debit-card",
+  "pix",
+  "boleto",
+  "cash",
+] as const;
+
+export type PaymentType = (typeof PAYMENT_TYPES)[number];
+
+export function labelForPaymentType(type: PaymentType): string {
+  switch (type) {
+    case "credit-card":
+      return "Credit Card";
+    case "debit-card":
+      return "Debit Card";
+    case "pix":
+      return "Pix";
+    case "boleto":
+      return "Boleto";
+    case "cash":
+      return "Cash";
+  }
+}
+
 type _DbEntry = {
   id: string;
   created_at: string;
@@ -72,7 +97,7 @@ type _DbEntry = {
   installment: number;
   installments: number;
   obs: string | null;
-  payment_type: "credit-card" | "debit-card" | "pix" | "boleto" | "cash";
+  payment_type: PaymentType;
 };
 
 function dbToObjGroup(data: _DbGroup): Group {
@@ -286,6 +311,38 @@ export async function upsertGroupUserMembers(
   return { data: updatedGroup!.members, error: null };
 }
 
+export async function getEntry(
+  supabase: SupabaseClient,
+  entryId: string,
+): Promise<ApiResult<Entry>> {
+  const { data, error } = await supabase
+    .from("gs_entries")
+    .select(
+      `
+      id,
+      created_at,
+      group_id,
+      member_id,
+      description,
+      date,
+      amount,
+      installment,
+      installments,
+      obs,
+      payment_type
+      `,
+    )
+    .eq("id", entryId)
+    .single()
+    .overrideTypes<_DbEntry>();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: dbToObjEntry(data!), error: null };
+}
+
 export async function getEntries(
   supabase: SupabaseClient,
   group_id: string,
@@ -335,4 +392,20 @@ export async function addEntry(
   }
 
   return { data: data.id, error: null };
+}
+
+export async function updateEntry(
+  supabase: SupabaseClient,
+  entry: Entry,
+): Promise<ApiResult<boolean>> {
+  const { error } = await supabase
+    .from("gs_entries")
+    .update(entry)
+    .eq("id", entry.id);
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: true, error: null };
 }
