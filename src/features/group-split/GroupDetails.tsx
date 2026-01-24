@@ -2,6 +2,7 @@ import {
   Avatar,
   AvatarGroup,
   defineStyle,
+  Flex,
   Heading,
   HStack,
   Skeleton,
@@ -42,11 +43,12 @@ export default function GroupDetails() {
     );
   }
   return (
-    <>
+    <Flex direction="column" height="100%">
       <HStack
         justifyContent="space-between"
         alignItems="start"
         marginBottom="8"
+        padding={{ base: 10, smDown: 3 }}
       >
         <Heading truncate title={selectedGroup?.name}>
           Group: {selectedGroup?.name}
@@ -93,6 +95,6 @@ export default function GroupDetails() {
         </VStack>
       </HStack>
       <GroupEntries />
-    </>
+    </Flex>
   );
 }

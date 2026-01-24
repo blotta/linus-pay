@@ -1,44 +1,135 @@
 import { useEffect, useState } from "react";
 import type { Entry } from "./groupSplit.types";
-import { getEntries, addEntry, updateEntry, getEntry } from "./groupSplit.api";
+import {
+  getEntries,
+  addEntry,
+  updateEntry,
+  getEntry,
+  type EntryWithoutId,
+  deleteEntry,
+} from "./groupSplit.api";
 import { supabase } from "@/helper/supabaseClient";
 import { formatDate } from "@/utils/date";
+import { create } from "zustand";
 
-export function useEntries(groupId: string) {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshEntries, setRefreshEntries] = useState(0);
-  const [error, setError] = useState("");
+interface EntriesStore {
+  entries: Entry[];
+  fetching: boolean;
+  updating: boolean;
+  error: string | null;
+  currentGroupId: string | undefined;
+  fetchEntries: (groupId: string) => Promise<void>;
+  addEntry: (entry: EntryWithoutId) => Promise<string | null>;
+  updateEntry: (entry: Entry) => Promise<void>;
+  removeEntry: (entryId: string) => Promise<void>;
+}
+
+export const useEntriesStore = create<EntriesStore>((set) => ({
+  entries: [],
+  fetching: false,
+  updating: false,
+  error: null,
+  currentGroupId: undefined,
+  fetchEntries: async (groupId: string) => {
+    set((s) => ({
+      ...s,
+      fetching: true,
+      entries: groupId === s.currentGroupId ? [...s.entries] : [],
+      currentGroupId: groupId,
+    }));
+    const { data, error } = await getEntries(supabase, groupId);
+    if (error) {
+      set((s) => ({ ...s, entries: [], fetching: false, error: error }));
+      return;
+    }
+    set((s) => ({ ...s, entries: data!, fetching: false, error: null }));
+  },
+
+  addEntry: async (entry: EntryWithoutId): Promise<string | null> => {
+    set((s) => ({ ...s, updating: true }));
+
+    const { data: newEntryId, error } = await addEntry(supabase, entry);
+    if (error) {
+      set((s) => ({ ...s, entries: [], updating: false, error: error }));
+      return null;
+    }
+    const { data: newEntry } = await getEntry(supabase, newEntryId!);
+
+    set((s) => ({
+      ...s,
+      entries: [...s.entries, newEntry!],
+      updating: false,
+      error: null,
+    }));
+    return newEntryId!;
+  },
+
+  updateEntry: async (entry: Entry) => {
+    set((s) => ({ ...s, updating: true }));
+
+    const { error } = await updateEntry(supabase, entry);
+    if (error) {
+      set({ updating: false, error: error });
+      return;
+    }
+
+    set((s) => ({
+      ...s,
+      entries: s.entries.map((e) => {
+        if (e.id === entry.id) {
+          return { ...e, ...entry };
+        }
+        return e;
+      }),
+      updating: false,
+      error: null,
+    }));
+  },
+
+  removeEntry: async (entryId: string) => {
+    set((s) => ({ ...s, updating: true }));
+
+    const { error } = await deleteEntry(supabase, entryId);
+    if (error) {
+      set({ updating: false, error: error });
+      return;
+    }
+
+    set((s) => ({
+      ...s,
+      entries: s.entries.filter((e) => e.id !== entryId),
+      updating: false,
+      error: null,
+    }));
+  },
+}));
+
+export type EntrySplit = {
+  entryId: string;
+  memberId: string;
+  shareCents: number;
+};
+
+export const useEntries = (groupId: string) => {
+  const fetch = useEntriesStore((s) => s.fetchEntries);
+  const entries = useEntriesStore((s) => s.entries);
+  const currentGroupId = useEntriesStore((s) => s.currentGroupId);
+  const fetching = useEntriesStore((s) => s.fetching);
+  const updating = useEntriesStore((s) => s.updating);
+  const error = useEntriesStore((s) => s.error);
 
   useEffect(() => {
-    if (!groupId) return;
-
-    const loadEntries = async () => {
-      setLoading(true);
-      const { data, error } = await getEntries(supabase, groupId);
-      if (error) {
-        setError(error);
-        setLoading(false);
-        return;
-      }
-      setEntries(data!);
-      setLoading(false);
-    };
-    loadEntries();
-  }, [groupId, refreshEntries]);
-
-  const refreshEntriesFn = () => {
-    setRefreshEntries((s) => s + 1);
-  };
+    fetch(groupId);
+  }, [groupId, fetch]);
 
   return {
     entries,
-    setEntries,
-    loading,
+    fetching,
+    updating,
     error,
-    refreshEntries: refreshEntriesFn,
+    currentGroupId,
   };
-}
+};
 
 type EntryFormValues = Omit<Entry, "id" | "created_at" | "date"> & {
   id: string | null | undefined;
@@ -50,7 +141,7 @@ export type UseEntryFormParams = {
   initialEntry?: Entry;
   groupId: string;
   creatorMemberId: string;
-  onSuccess?: (entry: Entry) => void;
+  onSuccess?: (entryId: string) => void;
 };
 export function useEntryForm({
   initialEntry,
@@ -71,11 +162,11 @@ export function useEntryForm({
     obs: initialEntry?.obs ?? null,
     payment_type: initialEntry?.payment_type ?? "credit-card",
   }));
-  const [loading, setLoading] = useState(false);
   const isEdit = Boolean(initialEntry?.id);
+  const { addEntry, updateEntry, removeEntry, error } = useEntriesStore();
 
   const submit = async () => {
-    setLoading(true);
+    // setLoading(true);
     if (isEdit) {
       // update
       const entry: Entry = {
@@ -91,16 +182,13 @@ export function useEntryForm({
         payment_type: values.payment_type,
         obs: values.obs,
       };
-      const { error } = await updateEntry(supabase, entry);
-      if (error) {
-        console.log(error);
-        setLoading(false);
-        return;
+      await updateEntry(entry);
+      if (!error) {
+        onSuccess?.(entry.id);
       }
-      onSuccess?.(entry);
     } else {
       // new
-      const { data, error } = await addEntry(supabase, {
+      const entry: EntryWithoutId = {
         date: new Date(values.date),
         amount: values.amount,
         description: values.description,
@@ -110,17 +198,13 @@ export function useEntryForm({
         member_id: values.member_id,
         obs: values.obs,
         payment_type: values.payment_type,
-      });
-      if (error) {
-        console.log(error);
-        setLoading(false);
-        return;
+      };
+      const entryId = await addEntry(entry);
+      if (!error) {
+        onSuccess?.(entryId!);
       }
-      const { data: entry } = await getEntry(supabase, data!);
-      onSuccess?.(entry!);
     }
-    setLoading(false);
   };
 
-  return { values, setValues, submit, loading, isEdit };
+  return { values, setValues, submit, isEdit, removeEntry };
 }

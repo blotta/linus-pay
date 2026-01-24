@@ -374,7 +374,7 @@ export async function getEntries(
   return { data: data.map((e) => dbToObjEntry(e)), error: null };
 }
 
-type EntryWithoutId = Omit<Entry, "id" | "created_at">;
+export type EntryWithoutId = Omit<Entry, "id" | "created_at">;
 
 export async function addEntry(
   supabase: SupabaseClient,
@@ -402,6 +402,22 @@ export async function updateEntry(
     .from("gs_entries")
     .update(entry)
     .eq("id", entry.id);
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: true, error: null };
+}
+
+export async function deleteEntry(
+  supabase: SupabaseClient,
+  entryId: string,
+): Promise<ApiResult<boolean>> {
+  const { error } = await supabase
+    .from("gs_entries")
+    .delete()
+    .eq("id", entryId);
 
   if (error) {
     return { data: null, error: error.message };

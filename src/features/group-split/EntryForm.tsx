@@ -13,12 +13,15 @@ import {
   useSelectContext,
   VStack,
   Text,
+  Flex,
+  IconButton,
 } from "@chakra-ui/react";
 import { forwardRef, useImperativeHandle, type Ref } from "react";
 import { useEntryForm, type UseEntryFormParams } from "./useEntries";
 import type { GroupMember } from "./groupSplit.types";
 import { colorFromUuid } from "@/utils/colors";
 import { labelForPaymentType, PAYMENT_TYPES } from "./groupSplit.api";
+import { BiTrash } from "react-icons/bi";
 
 interface EntryFormProps {
   entryParams: UseEntryFormParams;
@@ -28,11 +31,19 @@ interface EntryFormProps {
 }
 
 const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
-  const { values, setValues, submit } = useEntryForm(props.entryParams);
+  const { values, setValues, submit, removeEntry } = useEntryForm(
+    props.entryParams,
+  );
 
   const handleSubmit = async () => {
     props.onUpdateLoading?.(true);
     await submit();
+    props.onUpdateLoading?.(false);
+  };
+
+  const handleEntryDelete = async (entryId: string) => {
+    props.onUpdateLoading?.(true);
+    await removeEntry(entryId);
     props.onUpdateLoading?.(false);
   };
 
@@ -59,29 +70,43 @@ const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
 
   return (
     <>
+      <Flex justifyContent="end">
+        <IconButton
+          variant="ghost"
+          color="red.subtle"
+          _hover={{ color: "red.solid" }}
+          onClick={() => handleEntryDelete(props.entryParams.initialEntry!.id)}
+        >
+          <BiTrash />
+        </IconButton>
+      </Flex>
       <VStack align="start" gap="8">
-        <Field.Root required>
-          <Field.Label>Description</Field.Label>
-          <Input
-            type="text"
-            required
-            onChange={(e) =>
-              setValues((v) => ({ ...v, description: e.target.value }))
-            }
-            value={values.description}
-          />
-        </Field.Root>
+        <Stack gap="8" direction={{ md: "row", smDown: "column" }} width="full">
+          <Field.Root required>
+            <Field.Label>Description</Field.Label>
+            <Input
+              type="text"
+              required
+              onChange={(e) =>
+                setValues((v) => ({ ...v, description: e.target.value }))
+              }
+              value={values.description}
+            />
+          </Field.Root>
+          <Field.Root>
+            <Field.Label>Date</Field.Label>
+            <Input
+              type="date"
+              required
+              onChange={(e) =>
+                setValues((v) => ({ ...v, date: e.target.value }))
+              }
+              value={values.date}
+            />
+          </Field.Root>
+        </Stack>
         <Field.Root>
-          <Field.Label>Date</Field.Label>
-          <Input
-            type="date"
-            required
-            onChange={(e) => setValues((v) => ({ ...v, date: e.target.value }))}
-            value={values.date}
-          />
-        </Field.Root>
-        <Field.Root>
-          <Field.Label>Member</Field.Label>
+          <Field.Label>Member (Payer)</Field.Label>
           <Select.Root
             collection={membersCollection}
             defaultValue={[

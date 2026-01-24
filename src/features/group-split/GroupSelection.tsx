@@ -1,6 +1,7 @@
 import {
   Avatar,
   AvatarGroup,
+  Box,
   Card,
   Center,
   createListCollection,
@@ -8,6 +9,7 @@ import {
   FormatNumber,
   Group,
   Heading,
+  HStack,
   Icon,
   IconButton,
   Portal,
@@ -55,10 +57,15 @@ export default function GroupSelection() {
     });
     return (
       <>
-        <Flex alignItems="end" justifyContent="end">
-          <Group attached>
+        <Flex
+          mb={{ sm: "4" }}
+          my={{ smDown: "4" }}
+          px="2"
+          alignItems="end"
+          justifyContent="end"
+        >
+          <Group attached width={{ base: "300px", smDown: "100%" }}>
             <Select.Root
-              width="300px"
               collection={groupItems}
               value={[selectedGroup?.id]}
               onValueChange={(e) => handleGroupChange(e.value[0])}
@@ -125,9 +132,20 @@ export default function GroupSelection() {
   }
 
   return (
-    <>
-      <Heading my="10">Select a group</Heading>
-      <SimpleGrid minChildWidth="sm" gap="8">
+    <Box p="4">
+      <HStack justifyContent="space-between" alignItems="start">
+        <Heading mb={{ base: 10, smDown: 4 }}>Select a group</Heading>
+        <FormDrawer
+          title="Create Group"
+          submitLabel="Create"
+          formNode={<GroupForm group_id={null} />}
+        >
+          <Icon size="2xl">
+            <BiPlusCircle />
+          </Icon>
+        </FormDrawer>
+      </HStack>
+      <SimpleGrid minChildWidth="sm" gap="8" gapY="4">
         {groups.map((g) => (
           <RouterLink key={g.id} to={`/group-split/${g.id}`}>
             <Card.Root _hover={{ bg: "gray.subtle" }}>
@@ -184,6 +202,6 @@ export default function GroupSelection() {
           </Card.Root>
         </FormDrawer>
       </SimpleGrid>
-    </>
+    </Box>
   );
 }
