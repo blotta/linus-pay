@@ -241,6 +241,14 @@ const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
             value={values.obs ?? ""}
           />
         </Field.Root>
+        {values.splits.map((s) => (
+          <HStack key={s.member_id}>
+            <p>{props.members.find((m) => m.id == s.member_id)!.name}</p>
+            <p>{s.split_type}</p>
+            {s.split_type === "percentage" && <Text>{s.percentage}%</Text>}
+            {s.split_type === "amount" && <Text>${s.amount}</Text>}
+          </HStack>
+        ))}
       </VStack>
     </>
   );

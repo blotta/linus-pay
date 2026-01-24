@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Entry, Group, GroupMember } from "./groupSplit.types";
+import type { Entry, EntrySplit, Group, GroupMember } from "./groupSplit.types";
 import type { ApiResult } from "@/api/api.types";
 
 export type UserGroup = {
@@ -86,6 +86,21 @@ export function labelForPaymentType(type: PaymentType): string {
   }
 }
 
+export const SPLIT_TYPES = ["percentage", "amount", "remainder"] as const;
+
+export type SplitType = (typeof SPLIT_TYPES)[number];
+
+export function labelForSplitType(type: SplitType): string {
+  switch (type) {
+    case "percentage":
+      return "Percentage";
+    case "amount":
+      return "Amount";
+    case "remainder":
+      return "Remainder";
+  }
+}
+
 type _DbEntry = {
   id: string;
   created_at: string;
@@ -98,6 +113,16 @@ type _DbEntry = {
   installments: number;
   obs: string | null;
   payment_type: PaymentType;
+  splits: _DbEntrySplit[];
+};
+
+type _DbEntrySplit = {
+  id: string;
+  entry_id: string;
+  member_id: string;
+  split_type: SplitType;
+  amount: number | null;
+  percentage: number | null;
 };
 
 function dbToObjGroup(data: _DbGroup): Group {
@@ -139,8 +164,21 @@ function dbToObjEntry(data: _DbEntry): Entry {
     installments: data.installments,
     obs: data.obs,
     payment_type: data.payment_type,
+    splits: data.splits.map((s) => dbToObjEntrySplit(s)),
   };
   return entry;
+}
+
+function dbToObjEntrySplit(data: _DbEntrySplit): EntrySplit {
+  const split: EntrySplit = {
+    id: data.id,
+    entry_id: data.entry_id,
+    member_id: data.member_id,
+    split_type: data.split_type,
+    amount: data.amount,
+    percentage: data.percentage,
+  };
+  return split;
 }
 
 export async function getGroup(
@@ -329,7 +367,15 @@ export async function getEntry(
       installment,
       installments,
       obs,
-      payment_type
+      payment_type,
+      splits: gs_entry_splits (
+        id,
+        entry_id,
+        member_id,
+        split_type,
+        amount,
+        percentage
+      )
       `,
     )
     .eq("id", entryId)
@@ -361,7 +407,15 @@ export async function getEntries(
       installment,
       installments,
       obs,
-      payment_type
+      payment_type,
+      splits: gs_entry_splits (
+        id,
+        entry_id,
+        member_id,
+        split_type,
+        amount,
+        percentage
+      )
       `,
     )
     .eq("group_id", group_id)
@@ -374,7 +428,10 @@ export async function getEntries(
   return { data: data.map((e) => dbToObjEntry(e)), error: null };
 }
 
-export type EntryWithoutId = Omit<Entry, "id" | "created_at">;
+export type EntryWithoutId = Omit<Entry, "id" | "created_at" | "splits"> & {
+  splits: EntrySplitWithoutId[];
+};
+export type EntrySplitWithoutId = Omit<EntrySplit, "id" | "entry_id">;
 
 export async function addEntry(
   supabase: SupabaseClient,
@@ -382,7 +439,17 @@ export async function addEntry(
 ): Promise<ApiResult<string>> {
   const { data, error } = await supabase
     .from("gs_entries")
-    .insert(entry)
+    .insert({
+      group_id: entry.group_id,
+      member_id: entry.member_id,
+      description: entry.description,
+      date: entry.date,
+      amount: entry.amount,
+      installment: entry.installment,
+      installments: entry.installments,
+      obs: entry.obs,
+      payment_type: entry.payment_type,
+    })
     .select("id")
     .single()
     .overrideTypes<string>();
@@ -391,12 +458,26 @@ export async function addEntry(
     return { data: null, error: error.message };
   }
 
-  return { data: data.id, error: null };
+  const entryId = data.id;
+
+  const { data: dataSplit, error: errorSplit } = await supabase
+    .from("gs_entry_splits")
+    .insert(entry.splits.map((s) => ({ ...s, entry_id: entryId })))
+    .select("id, member_id")
+    .overrideTypes<{ id: string; member_id: string }[]>();
+
+  if (errorSplit) {
+    return { data: null, error: errorSplit.message };
+  }
+
+  console.log(dataSplit);
+
+  return { data: entryId, error: null };
 }
 
 export async function updateEntry(
   supabase: SupabaseClient,
-  entry: Entry,
+  entry: Omit<Entry, "splits">,
 ): Promise<ApiResult<boolean>> {
   const { error } = await supabase
     .from("gs_entries")

@@ -1,9 +1,10 @@
-import { supabase } from "../supabaseNodeClient";
+import { supabase } from "../../supabaseNodeClient";
 import { exit } from "node:process";
-import { SupabaseClient, User } from "@supabase/supabase-js";
 import runGroup from "./features/groups";
 import runUserGroups from "./features/user-groups";
 import runEntries from "./features/entries";
+import { RunContext } from "../../utils";
+import { SupabaseClient, User } from "@supabase/supabase-js";
 
 const email = process.env.TEST_USER_EMAIL!;
 const password = process.env.TEST_USER_PASSWORD!;
@@ -21,21 +22,19 @@ if (authError) {
 
 console.log(`logged in as ${authData.user.email} (${authData.user.id})`);
 
-export type RunContext = {
+export type ApiContext = RunContext & {
   user: User;
   supabase: SupabaseClient;
-  feature: string;
-  step: string;
 };
 
-const runContext: RunContext = {
+const runContext: ApiContext = {
   user: authData.user,
   supabase: supabase,
   feature: "",
   step: "",
 };
 
-type FeatureFn = (ctx: RunContext) => Promise<void>;
+type FeatureFn = (ctx: ApiContext) => Promise<void>;
 
 const features: { feature: string; fn: FeatureFn }[] = [
   { feature: "Group", fn: runGroup },

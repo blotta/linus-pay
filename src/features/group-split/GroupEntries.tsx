@@ -110,6 +110,7 @@ export default function GroupEntries() {
               entryParams={{
                 initialEntry: undefined,
                 creatorMemberId: memberByUserId.get(userId)!.id,
+                members: selectedGroup!.members,
                 groupId: selectedGroup!.id,
                 onSuccess: (entryId: string) => {
                   setSelectedEntryId(entryId);
@@ -146,6 +147,7 @@ export default function GroupEntries() {
                   key={entry.value}
                   item={entry}
                   highlightOnHover
+                  maxHeight="6em"
                 >
                   <SimpleGrid
                     columns={6}
@@ -215,6 +217,7 @@ export default function GroupEntries() {
                       members={selectedGroup!.members}
                       entryParams={{
                         initialEntry: selEntry,
+                        members: selectedGroup!.members,
                         creatorMemberId: selEntry.member_id,
                         groupId: selEntry.group_id,
                         onSuccess: (entryId: string) => {

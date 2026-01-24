@@ -1,16 +1,26 @@
 import { exit } from "process";
-import { RunContext } from "./groupSplit/api";
+
+export type RunContext = {
+  feature: string;
+  step: string;
+};
+
+interface LogOptions {
+  json?: boolean;
+}
 
 export function log(
-  obj: object | string,
+  obj: object | string | boolean,
   title: string | null = null,
-  opts: { json: boolean } = { json: false },
+  opts: LogOptions = {},
 ) {
+  const { json = false } = opts;
+
   const l = [];
   if (title) {
     l.push(`[${title}]:`);
   }
-  if (opts.json) {
+  if (json) {
     l.push(JSON.stringify(obj, null, 2));
   } else {
     l.push(obj);
@@ -18,13 +28,20 @@ export function log(
   console.log(...l);
 }
 
+interface CheckOptions {
+  json?: boolean;
+  shouldError?: boolean;
+}
+
 export function check(
   ctx: RunContext,
-  data: object | string,
-  error: string,
-  opts: { json: boolean } = { json: false },
+  data: object | string | boolean,
+  error: string | null,
+  opts: CheckOptions = {},
 ) {
-  if (error) {
+  const { shouldError = false } = opts;
+
+  if (!shouldError && error) {
     log(error, `${ctx.feature}:${ctx.step}:ERROR`);
     exit();
   }

@@ -1,3 +1,5 @@
+import type { PaymentType, SplitType } from "./groupSplit.api";
+
 export type Group = {
   id: string;
   name: string;
@@ -25,5 +27,15 @@ export type Entry = {
   installment: number;
   installments: number;
   obs: string | null;
-  payment_type: "credit-card" | "debit-card" | "pix" | "boleto" | "cash";
+  payment_type: PaymentType;
+  splits: EntrySplit[];
+};
+
+export type EntrySplit = {
+  id: string;
+  entry_id: string;
+  member_id: string;
+  split_type: SplitType;
+  amount: number | null;
+  percentage: number | null;
 };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Entry } from "./groupSplit.types";
+import type { Entry, EntrySplit, GroupMember } from "./groupSplit.types";
 import {
   getEntries,
   addEntry,
@@ -64,7 +64,7 @@ export const useEntriesStore = create<EntriesStore>((set) => ({
     return newEntryId!;
   },
 
-  updateEntry: async (entry: Entry) => {
+  updateEntry: async (entry: Omit<Entry, "splits">) => {
     set((s) => ({ ...s, updating: true }));
 
     const { error } = await updateEntry(supabase, entry);
@@ -104,12 +104,6 @@ export const useEntriesStore = create<EntriesStore>((set) => ({
   },
 }));
 
-export type EntrySplit = {
-  entryId: string;
-  memberId: string;
-  shareCents: number;
-};
-
 export const useEntries = (groupId: string) => {
   const fetch = useEntriesStore((s) => s.fetchEntries);
   const entries = useEntriesStore((s) => s.entries);
@@ -131,22 +125,30 @@ export const useEntries = (groupId: string) => {
   };
 };
 
-type EntryFormValues = Omit<Entry, "id" | "created_at" | "date"> & {
+type EntryFormValues = Omit<Entry, "id" | "created_at" | "date" | "splits"> & {
   id: string | null | undefined;
   created_at: string | null | undefined;
   date: string;
+  splits: EntrySplitFormValues[];
+};
+
+type EntrySplitFormValues = Omit<EntrySplit, "id" | "entry_id"> & {
+  id: string | null | undefined;
+  entry_id: string | null | undefined;
 };
 
 export type UseEntryFormParams = {
   initialEntry?: Entry;
   groupId: string;
   creatorMemberId: string;
+  members: GroupMember[];
   onSuccess?: (entryId: string) => void;
 };
 export function useEntryForm({
   initialEntry,
   groupId,
   creatorMemberId,
+  members,
   onSuccess,
 }: UseEntryFormParams) {
   const [values, setValues] = useState<EntryFormValues>(() => ({
@@ -161,6 +163,16 @@ export function useEntryForm({
     group_id: initialEntry?.group_id ?? groupId,
     obs: initialEntry?.obs ?? null,
     payment_type: initialEntry?.payment_type ?? "credit-card",
+    splits:
+      initialEntry?.splits ??
+      members.map((m, i) => ({
+        id: null,
+        split_type: members.length == i + 1 ? "remainder" : "percentage",
+        percentage: members.length == i + 1 ? null : 100 / members.length,
+        amount: null,
+        entry_id: initialEntry?.id,
+        member_id: m.id,
+      })),
   }));
   const isEdit = Boolean(initialEntry?.id);
   const { addEntry, updateEntry, removeEntry, error } = useEntriesStore();
@@ -181,6 +193,9 @@ export function useEntryForm({
         created_at: new Date(values.created_at!),
         payment_type: values.payment_type,
         obs: values.obs,
+        // TODO: fix
+        splits: [],
+        // splits: values.splits,
       };
       await updateEntry(entry);
       if (!error) {
@@ -198,6 +213,7 @@ export function useEntryForm({
         member_id: values.member_id,
         obs: values.obs,
         payment_type: values.payment_type,
+        splits: values.splits,
       };
       const entryId = await addEntry(entry);
       if (!error) {
