@@ -4,15 +4,22 @@ import {
   deleteGroup,
   getEntries,
   getGroup,
+  upsertEntrySplits,
   upsertGroupUserMembers,
 } from "../../../../src/features/group-split/groupSplit.api";
-import { GroupMember } from "../../../../src/features/group-split/groupSplit.types";
+import {
+  EntrySplit,
+  GroupMember,
+} from "../../../../src/features/group-split/groupSplit.types";
 import { check } from "../../../utils";
 import { type ApiContext } from "..";
 
 export default async function runEntries(ctx: ApiContext) {
   // setup
-  const { data: groupId } = await createGroup(ctx.supabase, "NEW GRP ENTRIES");
+  const { data: groupId } = await createGroup(
+    ctx.supabase,
+    `TEST GROUP - ${ctx.feature}`,
+  );
   const { data: group } = await getGroup(ctx.supabase, groupId);
   const { data } = await upsertGroupUserMembers(ctx.supabase, groupId, [
     group.members[0], // admin
@@ -58,5 +65,27 @@ export default async function runEntries(ctx: ApiContext) {
   );
   check(ctx, entries, errorGetEntries, { json: true });
 
+  ctx.step = "CHANGE ENTRY SPLITS";
+
+  const splits: EntrySplit[] = entries[0].splits;
+
+  const { data: newSplits, error: upsertEntrySplitsError } =
+    await upsertEntrySplits(ctx.supabase, entryId, [
+      {
+        ...splits.find((s) => s.split_type == "amount")!, // keep first
+        amount: 30, // but change the amount
+      },
+      {
+        id: null, // new split
+        entry_id: entryId,
+        member_id: memberId2,
+        split_type: "amount",
+        amount: 70,
+        percentage: null,
+      },
+    ]);
+  check(ctx, newSplits, upsertEntrySplitsError, { json: true });
+
+  // cleanup
   await deleteGroup(ctx.supabase, groupId);
 }

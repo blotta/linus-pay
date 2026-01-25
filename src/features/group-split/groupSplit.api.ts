@@ -460,7 +460,7 @@ export async function addEntry(
 
   const entryId = data.id;
 
-  const { data: dataSplit, error: errorSplit } = await supabase
+  const { error: errorSplit } = await supabase
     .from("gs_entry_splits")
     .insert(entry.splits.map((s) => ({ ...s, entry_id: entryId })))
     .select("id, member_id")
@@ -469,8 +469,6 @@ export async function addEntry(
   if (errorSplit) {
     return { data: null, error: errorSplit.message };
   }
-
-  console.log(dataSplit);
 
   return { data: entryId, error: null };
 }
@@ -505,4 +503,85 @@ export async function deleteEntry(
   }
 
   return { data: true, error: null };
+}
+
+type EntrySplitUpsert = Omit<EntrySplit, "id"> & {
+  id: string | null;
+};
+
+// TODO: maybe delete everything and recreate?
+export async function upsertEntrySplits(
+  supabase: SupabaseClient,
+  entryId: string,
+  splits: EntrySplitUpsert[],
+): Promise<ApiResult<EntrySplit[]>> {
+  const { data: entry } = await getEntry(supabase, entryId);
+  const prevSplits = entry!.splits;
+
+  const toUpdate = splits.filter(
+    (s) => prevSplits.find((p) => p.id == s.id) != undefined,
+  );
+  const toAdd = splits.filter((s) => s.id == null);
+  const toDelete = prevSplits.filter(
+    (p) => splits.find((s) => s.id == p.id) == undefined,
+  );
+
+  // delete
+  if (toDelete.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("gs_entry_splits")
+      .delete()
+      .in(
+        "id",
+        toDelete.map((s) => s.id),
+      );
+    if (deleteError) {
+      return { data: null, error: deleteError.message };
+    }
+  }
+
+  const ret: EntrySplit[] = [];
+
+  // update
+  if (toUpdate.length > 0) {
+    const { error: updateError } = await supabase
+      .from("gs_entry_splits")
+      .upsert(toUpdate);
+    if (updateError) {
+      return { data: null, error: updateError.message };
+    }
+    ret.push(...(toUpdate as EntrySplit[]));
+  }
+
+  // add
+  if (toAdd.length > 0) {
+    const { data: insertData, error: insertError } = await supabase
+      .from("gs_entry_splits")
+      .insert(
+        toAdd.map((s) => ({
+          entry_id: s.entry_id,
+          member_id: s.member_id,
+          split_type: s.split_type,
+          amount: s.amount,
+          percentage: s.percentage,
+        })),
+      )
+      .select(
+        `
+      id,
+      entry_id,
+      member_id,
+      split_type,
+      amount,
+      percentage
+      `,
+      )
+      .overrideTypes<_DbEntrySplit[]>();
+    if (insertError) {
+      return { data: null, error: insertError.message };
+    }
+    ret.push(...insertData.map((s) => dbToObjEntrySplit(s)));
+  }
+
+  return { data: ret, error: null };
 }

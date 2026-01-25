@@ -14,7 +14,7 @@ export default async function runGroup(ctx: ApiContext) {
   ctx.step = "new group";
   const { data: groupId, error: errorCreateGroup } = await createGroup(
     ctx.supabase,
-    "NEW GRP 33",
+    `TEST GROUP - ${ctx.feature}`,
   );
   check(ctx, groupId, errorCreateGroup);
 
