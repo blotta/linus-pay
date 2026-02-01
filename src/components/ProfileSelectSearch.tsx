@@ -1,6 +1,6 @@
 import { getProfile, type Profile } from "@/api/profile.api";
 import { supabase } from "@/helper/supabaseClient";
-import { useProfile, useProfiles } from "@/hooks/useProfile";
+import { useProfiles, useProfileStore } from "@/hooks/useProfile";
 import { colorFromUuid } from "@/utils/colors";
 import {
   Avatar,
@@ -26,7 +26,7 @@ export default function ProfileSelectSearch({
   initialIds,
   onValueChange,
 }: ProfileSelectSearchProps) {
-  const { profile } = useProfile();
+  const profile = useProfileStore((s) => s.profile);
   const { profiles, search, setSearch, setExclude, loading, error } =
     useProfiles();
   const [selectedProfileIds, setSelectedProfileIds] =

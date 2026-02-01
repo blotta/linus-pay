@@ -12,7 +12,11 @@ import NotFound from "./NotFound";
 import Profile from "@/features/auth/Profile";
 import { AuthProvider } from "@/auth/AuthProvider";
 import GroupDetails from "@/features/group-split/GroupDetails";
-import { GroupSplitProvider } from "@/features/group-split/GroupSplitProvider";
+import { GroupSplitProvider } from "@/features/group-split/hooks/GroupSplitProvider";
+
+Object.defineProperty(navigator, "language", {
+  get: () => "pt-BR",
+});
 
 function App() {
   return (

@@ -24,7 +24,7 @@ import {
   type Ref,
 } from "react";
 import type { FormHandle } from "@/components/FormDrawer";
-import { useGroupSplit } from "./useGroupSplit";
+import { useGroupSplit } from "./hooks/useGroupSplit";
 import { useNavigate } from "react-router";
 import { BiTrash } from "react-icons/bi";
 import ProfileSelectSearch from "@/components/ProfileSelectSearch";

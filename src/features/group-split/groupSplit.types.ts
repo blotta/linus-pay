@@ -1,5 +1,45 @@
-import type { PaymentType, SplitType } from "./groupSplit.api";
+// enums
+export const PAYMENT_TYPES = [
+  "credit-card",
+  "debit-card",
+  "pix",
+  "boleto",
+  "cash",
+] as const;
 
+export type PaymentType = (typeof PAYMENT_TYPES)[number];
+
+export function labelForPaymentType(type: PaymentType): string {
+  switch (type) {
+    case "credit-card":
+      return "Credit Card";
+    case "debit-card":
+      return "Debit Card";
+    case "pix":
+      return "Pix";
+    case "boleto":
+      return "Boleto";
+    case "cash":
+      return "Cash";
+  }
+}
+
+export const SPLIT_TYPES = ["percentage", "amount", "remainder"] as const;
+
+export type SplitType = (typeof SPLIT_TYPES)[number];
+
+export function labelForSplitType(type: SplitType): string {
+  switch (type) {
+    case "percentage":
+      return "Percentage";
+    case "amount":
+      return "Amount";
+    case "remainder":
+      return "Remainder";
+  }
+}
+
+// models
 export type Group = {
   id: string;
   name: string;
@@ -32,7 +72,7 @@ export type Entry = {
 };
 
 export type EntrySplit = {
-  id: string;
+  // id: string;
   entry_id: string;
   member_id: string;
   split_type: SplitType;

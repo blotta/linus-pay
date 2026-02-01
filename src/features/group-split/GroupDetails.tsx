@@ -10,7 +10,7 @@ import {
   Stack,
   VStack,
 } from "@chakra-ui/react";
-import { useGroupSplit } from "./useGroupSplit";
+import { useGroupSplit } from "./hooks/useGroupSplit";
 import { Tooltip } from "@/components/ui/tooltip";
 import { colorFromUuid } from "@/utils/colors";
 import GroupEntries from "./GroupEntries";

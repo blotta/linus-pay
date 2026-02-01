@@ -9,9 +9,9 @@ import {
   updateGroup,
   upsertGroupUserMembers,
   type UserGroup,
-} from "./groupSplit.api";
+} from "../groupSplit.api";
 import { supabase } from "@/helper/supabaseClient";
-import type { Group } from "./groupSplit.types";
+import type { Group } from "../groupSplit.types";
 import { GroupSplitContext } from "./GroupSplitContext";
 
 export function GroupSplitProvider({

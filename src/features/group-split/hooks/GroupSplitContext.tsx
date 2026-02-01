@@ -1,6 +1,6 @@
 import { createContext } from "react";
-import type { UserGroup } from "./groupSplit.api";
-import type { Group } from "./groupSplit.types";
+import type { UserGroup } from "../groupSplit.api";
+import type { Group } from "../groupSplit.types";
 
 export type GroupSplitContextType = {
   groups: UserGroup[];

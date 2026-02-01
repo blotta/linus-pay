@@ -18,7 +18,7 @@ import {
   Spinner,
   Text,
 } from "@chakra-ui/react";
-import { useGroupSplit } from "./useGroupSplit";
+import { useGroupSplit } from "./hooks/useGroupSplit";
 import { Link as RouterLink } from "react-router";
 import { useNavigate } from "react-router";
 import { BiEdit, BiPlus, BiPlusCircle } from "react-icons/bi";

@@ -1,6 +1,5 @@
 import { supabase } from "@/helper/supabaseClient";
 import { GiHamburgerMenu } from "react-icons/gi";
-import { useProfile } from "@/hooks/useProfile";
 import {
   Avatar,
   Box,
@@ -19,10 +18,12 @@ import { useNavigate } from "react-router-dom";
 import { NavLink } from "react-router-dom";
 import { Tooltip } from "./ui/tooltip";
 import { colorFromUuid } from "@/utils/colors";
+import { useProfileStore } from "@/hooks/useProfile";
 
 export default function Header() {
   const navigate = useNavigate();
-  const { profile, loading: loadingProfile } = useProfile();
+  const profile = useProfileStore((s) => s.profile);
+  const fetchingProfile = useProfileStore((s) => s.fetching);
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -78,15 +79,12 @@ export default function Header() {
 
         <Menu.Root positioning={{ placement: "bottom" }}>
           <Menu.Trigger rounded="full" focusRing="outside">
-            {loadingProfile ? (
+            {!profile || fetchingProfile ? (
               <SkeletonCircle size="10" />
             ) : (
               <Tooltip content={profile?.full_name}>
                 <div>
-                  <Avatar.Root
-                    colorPalette={colorFromUuid(profile!.id)}
-                    title={profile?.full_name}
-                  >
+                  <Avatar.Root colorPalette={colorFromUuid(profile!.id)}>
                     <Avatar.Fallback name={profile?.full_name} />
                     <Avatar.Image src={profile?.avatar_url ?? undefined} />
                   </Avatar.Root>

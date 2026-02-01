@@ -1,4 +1,4 @@
-import { useGroupSplit } from "./useGroupSplit";
+import { useGroupSplit } from "./hooks/useGroupSplit";
 import { useEffect, useMemo, useState } from "react";
 import {
   Avatar,
@@ -17,7 +17,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { useEntries } from "./useEntries";
+import { useEntries } from "./hooks/useEntries";
 import { formatDate } from "@/utils/date";
 import { colorFromUuid } from "@/utils/colors";
 import FormDrawer from "@/components/FormDrawer";

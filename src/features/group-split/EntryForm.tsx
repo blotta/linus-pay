@@ -15,13 +15,21 @@ import {
   Text,
   Flex,
   IconButton,
+  Box,
+  Separator,
+  LocaleProvider,
+  FormatNumber,
 } from "@chakra-ui/react";
 import { forwardRef, useImperativeHandle, type Ref } from "react";
-import { useEntryForm, type UseEntryFormParams } from "./useEntries";
 import type { GroupMember } from "./groupSplit.types";
 import { colorFromUuid } from "@/utils/colors";
-import { labelForPaymentType, PAYMENT_TYPES } from "./groupSplit.api";
+import { labelForPaymentType, PAYMENT_TYPES } from "./groupSplit.types";
 import { BiTrash } from "react-icons/bi";
+import { CgClose } from "react-icons/cg";
+import { SplitTypeNativeSelect } from "./components/SplitTypeNativeSelect";
+import { MoneyInput } from "@/components/MoneyInput";
+import { PercentageInput } from "@/components/PercentageInput";
+import { useEntryForm, type UseEntryFormParams } from "./hooks/useEntryForm";
 
 interface EntryFormProps {
   entryParams: UseEntryFormParams;
@@ -31,9 +39,17 @@ interface EntryFormProps {
 }
 
 const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
-  const { values, setValues, submit, removeEntry } = useEntryForm(
-    props.entryParams,
-  );
+  const {
+    values,
+    setValues,
+    amounts,
+    amountsValid,
+    submit,
+    changeSplitType,
+    changeSplitValue,
+    removeEntry,
+  } = useEntryForm(props.entryParams);
+  console.log(amountsValid);
 
   const handleSubmit = async () => {
     props.onUpdateLoading?.(true);
@@ -241,14 +257,119 @@ const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
             value={values.obs ?? ""}
           />
         </Field.Root>
-        {values.splits.map((s) => (
-          <HStack key={s.member_id}>
-            <p>{props.members.find((m) => m.id == s.member_id)!.name}</p>
-            <p>{s.split_type}</p>
-            {s.split_type === "percentage" && <Text>{s.percentage}%</Text>}
-            {s.split_type === "amount" && <Text>${s.amount}</Text>}
-          </HStack>
-        ))}
+        <Field.Root>
+          <Field.Label>
+            Split Configuration
+            {amountsValid === false && (
+              <Text as="span" ml="4" color="fg.error">
+                Invalid amounts
+              </Text>
+            )}
+          </Field.Label>
+
+          {values.splits.map((split) => (
+            <Box
+              key={split.member_id}
+              bg="bg.muted"
+              border="1px solid"
+              borderColor="fg.subtle"
+              borderRadius="0.3em"
+              w="full"
+              p="4"
+            >
+              <HStack justifyContent="space-between">
+                <HStack>
+                  <Avatar.Root
+                    size="sm"
+                    colorPalette={colorFromUuid(
+                      props.members.find((m) => m.id == split.member_id)!
+                        .user_id ?? split.member_id,
+                    )}
+                  >
+                    <Avatar.Fallback
+                      name={
+                        props.members.find((m) => m.id == split.member_id)!.name
+                      }
+                    />
+                  </Avatar.Root>
+                  <p>
+                    {props.members.find((m) => m.id == split.member_id)!.name}
+                  </p>
+                </HStack>
+                <Group
+                  attached
+                  border="1px solid"
+                  borderColor="border.emphasized"
+                  borderRadius="0.3em"
+                >
+                  <SplitTypeNativeSelect
+                    size="sm"
+                    variant="plain"
+                    value={split.split_type}
+                    onSplitTypeChange={(t) =>
+                      changeSplitType(split.member_id, t)
+                    }
+                  />
+                  <Separator orientation="vertical" height="5" mx="2" />
+                  {split.split_type === "percentage" && (
+                    <Field.Root>
+                      <PercentageInput
+                        max={1}
+                        min={0.01}
+                        size="sm"
+                        variant="flushed"
+                        endElement={
+                          <FormatNumber
+                            value={amounts[split.member_id]}
+                            style="currency"
+                            currency="BRL"
+                          />
+                        }
+                        percentageValue={split.percentage ?? 0}
+                        onPercentageValueChange={(v) => {
+                          changeSplitValue(split.member_id, v);
+                        }}
+                      />
+                    </Field.Root>
+                  )}
+                  {split.split_type === "amount" && (
+                    <Field.Root>
+                      <LocaleProvider locale="pt-br">
+                        <MoneyInput
+                          size="sm"
+                          variant="flushed"
+                          ps="1em"
+                          moneyValue={split.amount ?? 0}
+                          onMoneyValueChange={(v) => {
+                            changeSplitValue(split.member_id, v);
+                          }}
+                        />
+                      </LocaleProvider>
+                    </Field.Root>
+                  )}
+                  {split.split_type === "remainder" && (
+                    <Field.Root>
+                      <MoneyInput
+                        disabled
+                        size="sm"
+                        variant="flushed"
+                        ps="1em"
+                        moneyValue={amounts[split.member_id]}
+                      />
+                    </Field.Root>
+                  )}
+                </Group>
+                <IconButton
+                  variant="ghost"
+                  color="red.muted"
+                  _hover={{ color: "red.solid" }}
+                >
+                  <CgClose />
+                </IconButton>
+              </HStack>
+            </Box>
+          ))}
+        </Field.Root>
       </VStack>
     </>
   );

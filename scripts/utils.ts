@@ -1,49 +1,93 @@
-import { exit } from "process";
+import { exit } from "node:process";
 
-export type RunContext = {
-  feature: string;
-  step: string;
+export function log(obj: Subject, title: string | null = null) {
+  if (title) {
+    process.stdout.write(`[${title}]: `);
+  }
+
+  console.dir(obj, { depth: 10, colors: true });
+}
+
+type Subject = string | boolean | object | null | undefined;
+
+type ValidationResult =
+  | { data: Subject; error: null }
+  | { data: null; error: string | boolean | object };
+
+type ValidationResultSet = [string, ValidationResult | boolean];
+
+type ValidationFn<T> = (
+  data: T,
+) =>
+  | ValidationResult
+  | Promise<ValidationResult>
+  | boolean
+  | Promise<boolean>
+  | ValidationResultSet[]
+  | Promise<ValidationResultSet[]>;
+
+type ValidationFnSet<T> = [string, ValidationFn<T>];
+
+export const Val = {
+  ok: (data: Subject): ValidationResult => {
+    return { data: data, error: null };
+  },
+  error: (msg: string): ValidationResult => {
+    return { data: null, error: msg };
+  },
+  isDefined: (data: Subject): ValidationResult => {
+    return data ? Val.ok(data) : Val.error("subject is not defined");
+  },
+  isNull: (data: Subject): ValidationResult => {
+    return data == null ? Val.ok(data) : Val.error("subject is not null");
+  },
+  true: (data: boolean): ValidationResult => {
+    return data === true ? Val.ok("true") : Val.error("false");
+  },
 };
 
-interface LogOptions {
-  json?: boolean;
-}
-
-export function log(
-  obj: object | string | boolean,
-  title: string | null = null,
-  opts: LogOptions = {},
+export async function check<TData>(
+  desc: string,
+  subject: TData,
+  ...validations: ValidationFnSet<TData>[]
 ) {
-  const { json = false } = opts;
+  const valResults: ValidationResultSet[] = [];
 
-  const l = [];
-  if (title) {
-    l.push(`[${title}]:`);
+  for (const [validateKey, validateFn] of validations) {
+    const title = `${desc}:${validateKey}`;
+    const validationResult = await validateFn(subject);
+    // const results: ValidationResultSet[] = [];
+    if (typeof validationResult === "boolean") {
+      valResults.push([title, Val.true(validationResult)]);
+    } else if (Array.isArray(validationResult)) {
+      const set = validationResult as ValidationResultSet[];
+      for (const [key, res] of set) {
+        const valRes: ValidationResult =
+          typeof res === "boolean" ? Val.true(res) : res;
+        valResults.push([`${title}:${key}`, valRes]);
+        if (valRes.error != null) {
+          break;
+        }
+      }
+    } else {
+      valResults.push([title, validationResult as ValidationResult]);
+    }
+
+    if (valResults.find((r) => (r[1] as ValidationResult).error != null)) {
+      break;
+    }
   }
-  if (json) {
-    l.push(JSON.stringify(obj, null, 2));
-  } else {
-    l.push(obj);
+
+  for (const [title, res] of valResults) {
+    const valRes = res as ValidationResult;
+    if (valRes.error != null) {
+      log(valRes.error, title + ":ERROR");
+    } else {
+      log(valRes.data, title + ":OK");
+    }
   }
-  console.log(...l);
-}
 
-interface CheckOptions {
-  json?: boolean;
-  shouldError?: boolean;
-}
-
-export function check(
-  ctx: RunContext,
-  data: object | string | boolean,
-  error: string | null,
-  opts: CheckOptions = {},
-) {
-  const { shouldError = false } = opts;
-
-  if (!shouldError && error) {
-    log(error, `${ctx.feature}:${ctx.step}:ERROR`);
+  if (valResults.find((r) => (r[1] as ValidationResult).error != null)) {
     exit();
   }
-  log(data, `${ctx.feature}:${ctx.step}:OK`, opts);
 }

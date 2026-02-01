@@ -1,4 +1,5 @@
-import { useProfile } from "@/hooks/useProfile";
+// import { useProfile } from "@/hooks/useProfile";
+import { useProfileStore } from "@/hooks/useProfile";
 import {
   Box,
   Button,
@@ -12,12 +13,10 @@ import {
 import { useEffect, useState, type FormEvent } from "react";
 
 export default function Profile() {
-  const {
-    profile,
-    loading: loadingProfile,
-    loadingUpdate,
-    updateProfile,
-  } = useProfile();
+  const profile = useProfileStore((s) => s.profile);
+  const fetchingProfile = useProfileStore((s) => s.fetching);
+  const updatingProfile = useProfileStore((s) => s.updating);
+  const updateProfile = useProfileStore((s) => s.updateProfile);
   const [fullName, setFullName] = useState<string>("");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -41,7 +40,7 @@ export default function Profile() {
         <Stack gap="8">
           <Heading textAlign="center">Profile</Heading>
 
-          {loadingProfile ? (
+          {fetchingProfile ? (
             <Center>
               <Spinner />
             </Center>
@@ -58,8 +57,8 @@ export default function Profile() {
               </Field.Root>
 
               <Button
-                loading={loadingUpdate}
-                disabled={loadingUpdate}
+                loading={updatingProfile}
+                disabled={updatingProfile}
                 type="submit"
               >
                 Save

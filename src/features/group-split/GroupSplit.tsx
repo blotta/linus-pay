@@ -1,7 +1,7 @@
 import { Outlet } from "react-router";
 import GroupSelection from "./GroupSelection";
 import { Flex, Box } from "@chakra-ui/react";
-import { useGroupSplit } from "./useGroupSplit";
+import { useGroupSplit } from "./hooks/useGroupSplit";
 
 export default function GroupSplit() {
   const { selectedGroup } = useGroupSplit();

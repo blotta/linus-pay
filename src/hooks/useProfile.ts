@@ -7,57 +7,51 @@ import {
 import { useAuth } from "@/auth/useAuth";
 import { supabase } from "@/helper/supabaseClient";
 import { useEffect, useState } from "react";
+import { create } from "zustand";
 
-export function useProfile() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { userId } = useAuth();
-  const [loadingUpdate, setLoadingUpdate] = useState(false);
+type ProfileState = {
+  profile: Profile | null;
+  fetching: boolean;
+  updating: boolean;
+  error: string | null;
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (userId == null) {
-        return;
-      }
-      setLoading(true);
+  loadProfile: (userId: string) => Promise<void>;
+  updateProfile: (updates: { full_name: string }) => Promise<void>;
+  clear: () => void;
+};
 
-      const { data, error } = await getProfile(supabase, userId!);
+export const useProfileStore = create<ProfileState>((set, get) => ({
+  profile: null,
+  fetching: false,
+  updating: false,
+  error: null,
 
-      if (error) {
-        setError(error);
-        setLoading(false);
-        return;
-      }
-
-      setProfile(data);
-      setLoading(false);
-    };
-
-    loadProfile();
-  }, [userId]);
-
-  const updateProfileFn = async (updates: { full_name: string }) => {
-    setLoadingUpdate(true);
-    const { error } = await updateProfile(supabase, userId!, updates);
-
+  loadProfile: async (userId: string) => {
+    set({ fetching: true, error: null });
+    const { data, error } = await getProfile(supabase, userId);
     if (error) {
-      setError(error);
+      set({ error, fetching: false });
+      return;
     }
+    set({ profile: data, fetching: false });
+  },
 
-    setProfile((s) => ({ ...s, ...updates }) as Profile);
+  updateProfile: async (updates: { full_name: string }) => {
+    const profile = get().profile;
+    if (!profile) return;
 
-    setLoadingUpdate(false);
-  };
-
-  return {
-    profile,
-    loading,
-    error,
-    loadingUpdate,
-    updateProfile: updateProfileFn,
-  };
-}
+    set({ updating: true, error: null });
+    const { error } = await updateProfile(supabase, profile.id, updates);
+    if (error) {
+      set({ error, updating: false });
+      return;
+    }
+    set({ updating: false, profile: { ...profile, ...updates } });
+  },
+  clear: () => {
+    set({ profile: null, fetching: false, updating: false, error: null });
+  },
+}));
 
 export function useProfiles() {
   const { userId } = useAuth();

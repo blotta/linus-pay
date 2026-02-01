@@ -34,12 +34,12 @@ export function validateEntrySplits(entry: Entry): SplitValidationResult {
     return { valid: false, error: "Amount exceeds entry total" };
   }
 
-  if (percentageTotal > 100) {
+  if (percentageTotal > 1.0) {
     return { valid: false, error: "Percentages exceed 100%" };
   }
 
   if (!remainderSplits.length) {
-    if (amountTotal !== entry.amount && percentageTotal !== 100) {
+    if (amountTotal !== entry.amount && percentageTotal !== 1.0) {
       return {
         valid: false,
         error: "Splits must fully cover entry amount",
