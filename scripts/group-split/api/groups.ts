@@ -32,7 +32,6 @@ await check(
   [
     "update returns success",
     (d) => {
-      console.log(d);
       return d.data === true;
     },
   ],

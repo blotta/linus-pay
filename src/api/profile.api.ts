@@ -50,8 +50,6 @@ export async function searchProfiles(
     .filter((x) => x != "")
     .join("%");
 
-  console.log(s);
-
   const { data, error } = await supabase
     .from("profiles")
     .select(
@@ -67,8 +65,6 @@ export async function searchProfiles(
   if (error) {
     return { data: null, error: error.message };
   }
-
-  console.log("found ", data.length, " values");
 
   return { data: data, error: null };
 }

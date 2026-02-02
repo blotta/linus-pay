@@ -138,12 +138,18 @@ export function useEntryForm({
         payment_type: values.payment_type,
         obs: values.obs,
         // TODO: fix
-        splits: [],
-        // splits: values.splits,
+        splits: values.splits.map((s) => ({
+          ...s,
+          entry_id: values.id!,
+          amount: s.split_type === "amount" ? s.amount : null,
+          percentage: s.split_type === "percentage" ? s.percentage : null,
+        })),
       };
       await updateEntry(entry);
       if (!error) {
         onSuccess?.(entry.id);
+      } else {
+        console.log(error);
       }
     } else {
       // new
@@ -162,6 +168,8 @@ export function useEntryForm({
       const entryId = await addEntry(entry);
       if (!error) {
         onSuccess?.(entryId!);
+      } else {
+        console.log(error);
       }
     }
   };

@@ -39,6 +39,7 @@ export function computeSplitAmounts(
       }
 
       payAmount = payAmount < 0 ? 0 : payAmount;
+      payAmount = Math.floor(payAmount * 100) / 100;
 
       entrySplitAmounts[split.member_id] = payAmount;
     }
@@ -50,7 +51,6 @@ export function computeSplitAmounts(
     }
   }
 
-  console.log(entriesSplitAmounts);
   return entriesSplitAmounts;
 }
 

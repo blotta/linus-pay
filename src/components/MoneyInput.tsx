@@ -9,7 +9,7 @@ interface MoneyInputProps extends NumberInput.RootProps {
 
 export const MoneyInput = React.forwardRef<HTMLDivElement, MoneyInputProps>(
   function MoneyInput(props, ref) {
-    const { children, moneyValue, onMoneyValueChange, ...rest } = props;
+    const { children, moneyValue, onMoneyValueChange, min, ...rest } = props;
     const { locale } = useLocaleContext();
     const [moneyValueStr, setMoneyValueStr] = useState<string>(
       numberToLocaleCurrencyStr(moneyValue, locale),
@@ -22,16 +22,17 @@ export const MoneyInput = React.forwardRef<HTMLDivElement, MoneyInputProps>(
     return (
       <NumberInput.Root
         ref={ref}
+        min={min}
         {...rest}
         value={moneyValueStr}
         onValueChange={(details) => {
           setMoneyValueStr(details.value);
-          if (
-            !Number.isNaN(details.valueAsNumber) &&
-            details.valueAsNumber != 0
-          ) {
-            onMoneyValueChange?.(details.valueAsNumber);
-          }
+        }}
+        onValueCommit={(details) => {
+          const value = !Number.isNaN(details.valueAsNumber)
+            ? details.valueAsNumber
+            : (min ?? 0);
+          onMoneyValueChange?.(value);
         }}
         formatOptions={{
           style: "currency",

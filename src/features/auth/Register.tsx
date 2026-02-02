@@ -61,7 +61,6 @@ export default function Register() {
       if (si.error) {
         setMessage(si.error.message);
       }
-      console.log(si.data);
       navigate("/");
     }
 

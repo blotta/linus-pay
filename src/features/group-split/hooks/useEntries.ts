@@ -64,6 +64,8 @@ export const useEntriesStore = create<EntriesStore>((set) => ({
       return;
     }
 
+    entry.splits.sort((a) => (a.split_type === "remainder" ? 1 : -1));
+
     set((s) => ({
       entries: s.entries.map((e) => {
         if (e.id === entry.id) {

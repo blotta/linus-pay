@@ -119,7 +119,6 @@ await check(
     async () => {
       const { data } = await getEntry(supabase, entry.id);
       const e: Entry = data!;
-      console.log(entry.id, e);
       return [
         ["length", e.splits.length === 2],
         [

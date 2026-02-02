@@ -49,18 +49,19 @@ const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
     changeSplitValue,
     removeEntry,
   } = useEntryForm(props.entryParams);
-  console.log(amountsValid);
 
   const handleSubmit = async () => {
     props.onUpdateLoading?.(true);
     await submit();
     props.onUpdateLoading?.(false);
+    props.closeDrawer?.();
   };
 
   const handleEntryDelete = async (entryId: string) => {
     props.onUpdateLoading?.(true);
     await removeEntry(entryId);
     props.onUpdateLoading?.(false);
+    props.closeDrawer?.();
   };
 
   useImperativeHandle(ref, () => ({
@@ -165,22 +166,16 @@ const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
         </Field.Root>
         <Stack gap="8" direction={{ md: "row", smDown: "column" }} width="full">
           <Field.Root required>
-            <Field.Label>Amount</Field.Label>
-            <NumberInput.Root
+            <Field.Label>Amouut</Field.Label>
+            <MoneyInput
               width="full"
-              value={values.amount.toLocaleString()}
-              onValueChange={(details) =>
-                setValues((v) => ({ ...v, amount: details.valueAsNumber }))
+              min={0.01}
+              moneyValue={values.amount}
+              onMoneyValueChange={(a) =>
+                setValues((v) => ({ ...v, amount: a }))
               }
-              formatOptions={{
-                style: "currency",
-                currency: "BRL",
-                currencyDisplay: "symbol",
-                currencySign: "accounting",
-              }}
-            >
-              <NumberInput.Input />
-            </NumberInput.Root>
+            ></MoneyInput>
+            <Field.ErrorText>Err</Field.ErrorText>
           </Field.Root>
           <Field.Root>
             <Field.Label>Payment Type</Field.Label>
@@ -325,7 +320,7 @@ const EntryForm = forwardRef((props: EntryFormProps, ref: Ref<FormHandle>) => {
                             currency="BRL"
                           />
                         }
-                        percentageValue={split.percentage ?? 0}
+                        percentageValue={split.percentage ?? 0.01}
                         onPercentageValueChange={(v) => {
                           changeSplitValue(split.member_id, v);
                         }}
